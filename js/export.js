@@ -113,14 +113,13 @@ function exportAxePDF(axeId) {
   }
   const axeRGB = hr(axe.color);
 
-  // ── Créer le document 14×11 pouces paysage ───────────────
+  // ── Créer le document légal paysage 14×8½ po ─────────────
   const { jsPDF } = window.jspdf;
-  const W = 14 * 72;    // 1008 pt  (14 po)
-  const H = 8.5 * 72;  //  612 pt  (8½ po)
+  const doc = new jsPDF({ unit: 'pt', format: 'legal', orientation: 'landscape' });
+  const W = doc.internal.pageSize.getWidth();   // 14 po = 1008 pt
+  const H = doc.internal.pageSize.getHeight();  // 8.5 po = 612 pt
   const ML = 48, MR = 48, MT = 48;
   const CW = W - ML - MR;
-
-  const doc = new jsPDF({ unit: 'pt', format: [W, H] });
   doc.setProperties({ title: `${axe.nom} — Rapport stratégique — Stukely-Sud` });
 
   let y = MT;
