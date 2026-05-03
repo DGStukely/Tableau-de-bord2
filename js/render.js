@@ -386,11 +386,18 @@ function renderTimeline() {
         <div class="tl-body">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
             <div class="tl-title">${h(item.titre)}</div>
-            <button onclick="openJalonModal('${h(String(item.id))}')" title="Modifier"
-              style="flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:2px 4px;border-radius:4px;line-height:1;"
-              onmouseover="this.style.color='var(--c-blue)'" onmouseout="this.style.color='var(--c-text-3)'">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
+            <div style="display:flex;gap:2px;flex-shrink:0;">
+              <button onclick="openJalonModal('${h(String(item.id))}')" title="Modifier"
+                style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:2px 4px;border-radius:4px;line-height:1;"
+                onmouseover="this.style.color='var(--c-blue)'" onmouseout="this.style.color='var(--c-text-3)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button onclick="confirmDeleteJalon('${h(String(item.id))}')" title="Supprimer"
+                style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:2px 4px;border-radius:4px;line-height:1;"
+                onmouseover="this.style.color='var(--c-danger)'" onmouseout="this.style.color='var(--c-text-3)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              </button>
+            </div>
           </div>
           <div class="tl-meta">
             <span>${fmtDate(item.date)}</span>

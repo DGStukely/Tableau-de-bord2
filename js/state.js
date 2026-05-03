@@ -74,7 +74,11 @@ function restoreData() {
     const d = JSON.parse(raw);
     if (d.axes    && d.axes.length)    APP.axes    = d.axes;
     if (d.actions && d.actions.length) APP.actions = d.actions;
-    // Les jalons viennent toujours de SharePoint — ne pas restaurer depuis le cache
+    // Les jalons viennent toujours de SharePoint — purger le cache existant
+    if (d.jalons) {
+      delete d.jalons;
+      localStorage.setItem(DATA_CACHE_KEY, JSON.stringify(d));
+    }
     invalidateAxeMap();
     return d.savedAt || true;
   } catch(e) { return false; }

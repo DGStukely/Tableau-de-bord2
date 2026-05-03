@@ -680,3 +680,17 @@ async function deleteJalon() {
     document.getElementById('jalon-form-saving').classList.remove('show');
   }
 }
+
+async function confirmDeleteJalon(id) {
+  if (!confirm('Supprimer ce jalon ?')) return;
+  try {
+    if (isLiveData && graphToken && spSiteId && !String(id).startsWith('local-')) {
+      await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${id}`, 'DELETE');
+    }
+    APP.jalons = APP.jalons.filter(x => String(x.id) !== String(id));
+    renderTimeline();
+    showToast('Jalon supprimé', 'success');
+  } catch (err) {
+    showToast('Erreur suppression : ' + err.message, 'error');
+  }
+}
