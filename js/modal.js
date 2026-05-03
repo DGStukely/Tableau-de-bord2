@@ -432,6 +432,7 @@ const CHAMP_LABELS = {
 /** Écrire une entrée dans Historique_Actions sur SharePoint */
 async function writeHistorique(actionId, actionTitre, type, newValues) {
   if (!isLiveData || !graphToken || !spSiteId) return;
+  if (!SP_CONFIG.lists.historique) return; // Liste non configurée pour ce site
   try {
     // Calculer le diff (uniquement pour les modifications)
     let details = {};
@@ -473,6 +474,10 @@ async function loadHistorique(actionId) {
   if (!el) return;
   el.innerHTML = '<div style="color:var(--c-text-3);font-size:12px;padding:.5rem 0;">Chargement…</div>';
 
+  if (!SP_CONFIG.lists.historique) {
+    el.innerHTML = '<div style="color:var(--c-text-3);font-size:12px;padding:.5rem 0;">Historique non disponible — liste non configurée.</div>';
+    return;
+  }
   if (!isLiveData || !graphToken || !spSiteId) {
     el.innerHTML = '<div style="color:var(--c-text-3);font-size:12px;padding:.5rem 0;">Disponible uniquement en mode SharePoint connecté.</div>';
     return;

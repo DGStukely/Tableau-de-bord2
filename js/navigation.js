@@ -104,7 +104,8 @@ function showApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  const db = document.getElementById('demo-banner'); if(db) db.style.display = 'flex';
+  // Bannière démo désactivée pour cette instance
+  // const db = document.getElementById('demo-banner'); if(db) db.style.display = 'flex';
 
   // Infos utilisateur
   if (currentAccount) {
@@ -113,8 +114,8 @@ function showApp() {
     const uiEl = document.getElementById('user-initials'); if (uiEl) uiEl.textContent = initials;
     const unEl = document.getElementById('user-name'); if (unEl) unEl.textContent = name.split(' ')[0];
   } else {
-    const diEl = document.getElementById('user-initials'); if (diEl) diEl.textContent = 'DÉ';
-    const dnEl = document.getElementById('user-name'); if (dnEl) dnEl.textContent = 'Mode démo';
+    const diEl = document.getElementById('user-initials'); if (diEl) diEl.textContent = 'SS';
+    const dnEl = document.getElementById('user-name'); if (dnEl) dnEl.textContent = 'Stukely-Sud';
   }
 
   // Indicateur live / démo
@@ -128,7 +129,7 @@ function showApp() {
   // Topbar
   const tmEl = document.getElementById('topbar-meta'); if (tmEl) tmEl.textContent =
     `Mise à jour le ${new Date().toLocaleDateString('fr-CA', {year:'numeric',month:'long',day:'numeric'})}` +
-    (isLiveData ? ' · SharePoint Live' : ' · Mode démo');
+    (isLiveData ? ' · SharePoint Live' : '');
 
   calcAvancementAxes();
   renderApercu();

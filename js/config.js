@@ -1,11 +1,11 @@
 /* ================================================================
-   CONFIGURATION SHAREPOINT — À MODIFIER
+   CONFIGURATION SHAREPOINT — STUKELY-SUD
    ================================================================ */
 const SP_CONFIG = {
-  tenantDomain: "municonsul485.sharepoint.com",
-  siteRelativeUrl: "/sites/Planstrategique-Demo",
+  tenantDomain:    "munstukelysud.sharepoint.com",
+  siteRelativeUrl: "/sites/Doc_Public",
   lists: { axes: "Axes_Strategiques", actions: "Actions_Plan", jalons: "Jalons", historique: "Historique_Actions" },
-  msalClientId: "d77e2842-aa80-489c-a13c-120357e6fb07",
-  msalAuthority: "https://login.microsoftonline.com/municonsul485.onmicrosoft.com",
-  redirectUri: "https://muni-consul.github.io/tableau-de-bord-strategique/"
+  msalClientId:  "f21b9923-650b-413c-8ebf-1ec8bcd02658",   
+  msalAuthority: "https://login.microsoftonline.com/munstukelysud.onmicrosoft.com",
+  redirectUri:   "https://dgstukely.github.io/Tableau-de-bord2/"
 };
