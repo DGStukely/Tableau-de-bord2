@@ -549,3 +549,134 @@ async function deleteAction(skipConfirm = false) {
   }
 }
 
+
+/* ================================================================
+   MODAL JALON
+   ================================================================ */
+let jalonEditId = null;
+
+function openJalonModal(id = null) {
+  jalonEditId = id;
+  const modal = document.getElementById('jalon-modal-bg');
+  const titleEl = document.getElementById('jalon-modal-title');
+  const deleteBtn = document.getElementById('jalon-btn-delete');
+  const errEl = document.getElementById('jalon-form-error');
+  document.getElementById('jalon-form-saving').classList.remove('show');
+  errEl.classList.remove('show');
+
+  // Remplir le select des axes
+  const axeSel = document.getElementById('jf-axe');
+  axeSel.innerHTML = '<option value="">— Aucun —</option>';
+  APP.axes.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.nom;
+    axeSel.appendChild(opt);
+  });
+
+  if (id) {
+    // Mode édition
+    const j = APP.jalons.find(x => String(x.id) === String(id));
+    if (!j) return;
+    titleEl.textContent = 'Modifier le jalon';
+    deleteBtn.style.display = '';
+    document.getElementById('jf-titre').value  = j.titre || '';
+    document.getElementById('jf-date').value   = j.date  || '';
+    document.getElementById('jf-statut').value = j.statut || 'à faire';
+    document.getElementById('jf-axe').value    = j.axe   || '';
+  } else {
+    // Mode création
+    titleEl.textContent = 'Nouveau jalon';
+    deleteBtn.style.display = 'none';
+    document.getElementById('jf-titre').value  = '';
+    document.getElementById('jf-date').value   = '';
+    document.getElementById('jf-statut').value = 'à faire';
+    document.getElementById('jf-axe').value    = '';
+  }
+
+  modal.classList.add('open');
+}
+
+function closeJalonModal() {
+  document.getElementById('jalon-modal-bg').classList.remove('open');
+  jalonEditId = null;
+}
+
+async function saveJalon() {
+  const titre  = document.getElementById('jf-titre').value.trim();
+  const date   = document.getElementById('jf-date').value;
+  const statut = document.getElementById('jf-statut').value;
+  const axe    = document.getElementById('jf-axe').value;
+
+  const errEl = document.getElementById('jalon-form-error');
+  errEl.classList.remove('show');
+
+  if (!titre) { errEl.textContent = 'Le titre est obligatoire.'; errEl.classList.add('show'); return; }
+  if (!date)  { errEl.textContent = 'La date est obligatoire.';  errEl.classList.add('show'); return; }
+
+  document.getElementById('jalon-form-saving').classList.add('show');
+  document.querySelectorAll('#jalon-modal-bg .form-btn-save, #jalon-modal-bg .form-btn-cancel, #jalon-modal-bg .form-btn-delete').forEach(b => b.disabled = true);
+
+  const newJalon = {
+    id:     jalonEditId || ('local-' + Date.now()),
+    titre:  titre,
+    date:   date,
+    statut: statut,
+    axe:    axe
+  };
+
+  try {
+    if (isLiveData && graphToken && spSiteId) {
+      const spFields = {
+        Title:  titre,
+        Date:   date + 'T00:00:00Z',
+        Statut: statut,
+        Axe:    axe
+      };
+      if (jalonEditId && !String(jalonEditId).startsWith('local-')) {
+        await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonEditId}/fields`, 'PATCH', spFields);
+        const idx = APP.jalons.findIndex(x => String(x.id) === String(jalonEditId));
+        if (idx !== -1) APP.jalons[idx] = { ...APP.jalons[idx], ...newJalon };
+      } else {
+        const res = await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items`, 'POST', { fields: spFields });
+        newJalon.id = res.id || res.fields?.id || newJalon.id;
+        APP.jalons.push(newJalon);
+      }
+      showToast('Jalon enregistré dans SharePoint', 'success');
+    } else {
+      if (jalonEditId) {
+        const idx = APP.jalons.findIndex(x => String(x.id) === String(jalonEditId));
+        if (idx !== -1) APP.jalons[idx] = newJalon;
+      } else {
+        APP.jalons.push(newJalon);
+      }
+      showToast('Jalon enregistré localement', 'info');
+    }
+    renderTimeline();
+    closeJalonModal();
+  } catch (err) {
+    errEl.textContent = 'Erreur : ' + err.message;
+    errEl.classList.add('show');
+    document.getElementById('jalon-form-saving').classList.remove('show');
+    document.querySelectorAll('#jalon-modal-bg .form-btn-save, #jalon-modal-bg .form-btn-cancel, #jalon-modal-bg .form-btn-delete').forEach(b => b.disabled = false);
+  }
+}
+
+async function deleteJalon() {
+  if (!jalonEditId) return;
+  if (!confirm('Supprimer ce jalon ?')) return;
+  document.getElementById('jalon-form-saving').classList.add('show');
+  try {
+    if (isLiveData && graphToken && spSiteId && !String(jalonEditId).startsWith('local-')) {
+      await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonEditId}`, 'DELETE');
+    }
+    APP.jalons = APP.jalons.filter(x => String(x.id) !== String(jalonEditId));
+    renderTimeline();
+    closeJalonModal();
+    showToast('Jalon supprimé', 'success');
+  } catch (err) {
+    document.getElementById('jalon-form-error').textContent = 'Erreur suppression : ' + err.message;
+    document.getElementById('jalon-form-error').classList.add('show');
+    document.getElementById('jalon-form-saving').classList.remove('show');
+  }
+}

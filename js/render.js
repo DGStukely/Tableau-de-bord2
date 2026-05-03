@@ -368,7 +368,12 @@ function renderTimeline() {
   const axeMap = getAxeMap();
 
   const sorted = [...APP.jalons].sort((a,b) => new Date(a.date) - new Date(b.date));
-  document.getElementById('timeline-list').innerHTML = sorted.map((item, i) => {
+  const listEl = document.getElementById('timeline-list');
+  if (!sorted.length) {
+    listEl.innerHTML = `<div style="text-align:center;color:var(--c-text-3);padding:2rem;font-size:.9rem;">Aucun jalon — cliquez <strong>+ Nouveau jalon</strong> pour en créer un.</div>`;
+    return;
+  }
+  listEl.innerHTML = sorted.map((item, i) => {
     const axe = axeMap[item.axe];
     const sm  = STATUS_MAP[item.statut] || STATUS_MAP['à faire'];
     const isLast = i === sorted.length - 1;
@@ -379,7 +384,14 @@ function renderTimeline() {
           ${!isLast ? '<div class="tl-line"></div>' : ''}
         </div>
         <div class="tl-body">
-          <div class="tl-title">${h(item.titre)}</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+            <div class="tl-title">${h(item.titre)}</div>
+            <button onclick="openJalonModal('${h(String(item.id))}')" title="Modifier"
+              style="flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:2px 4px;border-radius:4px;line-height:1;"
+              onmouseover="this.style.color='var(--c-blue)'" onmouseout="this.style.color='var(--c-text-3)'">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </div>
           <div class="tl-meta">
             <span>${fmtDate(item.date)}</span>
             ${axe ? `<span style="color:${h(axe.color)}">${h(axe.nom)}</span>` : ''}
