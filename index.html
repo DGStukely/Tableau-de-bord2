@@ -231,9 +231,35 @@
         </div>
         <div class="settings-pane" id="settings-pane-statuts">
           <div id="settings-statuts-list"></div>
+          <div class="add-item-row" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem;align-items:flex-end;">
+            <div class="add-item-field" style="flex:1;min-width:160px;">
+              <label>Nom du statut</label>
+              <input type="text" id="new-statut-nom" placeholder="Ex : suspendu" />
+            </div>
+            <div class="add-item-field">
+              <label>Couleur fond</label>
+              <input type="color" id="new-statut-bg" value="#e2e8f0" style="width:46px;height:32px;padding:2px;border:1px solid var(--c-border-med);border-radius:6px;cursor:pointer;" />
+            </div>
+            <div class="add-item-field">
+              <label>Couleur texte</label>
+              <input type="color" id="new-statut-fg" value="#1e293b" style="width:46px;height:32px;padding:2px;border:1px solid var(--c-border-med);border-radius:6px;cursor:pointer;" />
+            </div>
+            <button onclick="addStatut()" style="height:32px;padding:0 1rem;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;align-self:flex-end;">+ Ajouter</button>
+          </div>
         </div>
         <div class="settings-pane" id="settings-pane-prios">
           <div id="settings-prios-list"></div>
+          <div class="add-item-row" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem;align-items:flex-end;">
+            <div class="add-item-field" style="flex:1;min-width:160px;">
+              <label>Nom de la priorité</label>
+              <input type="text" id="new-prio-nom" placeholder="Ex : critique" />
+            </div>
+            <div class="add-item-field">
+              <label>Couleur</label>
+              <input type="color" id="new-prio-couleur" value="#6366f1" style="width:46px;height:32px;padding:2px;border:1px solid var(--c-border-med);border-radius:6px;cursor:pointer;" />
+            </div>
+            <button onclick="addPriorite()" style="height:32px;padding:0 1rem;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;align-self:flex-end;">+ Ajouter</button>
+          </div>
         </div>
         <div class="settings-pane" id="settings-pane-apparence">
           <div id="settings-theme-btns" style="display:flex;gap:.5rem;margin-top:.5rem;">
