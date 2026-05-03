@@ -65,7 +65,7 @@ function exportPDF() {
       <thead><tr><th>Objectif</th><th>Axe</th><th>Responsable</th><th>Priorité</th><th>Échéance</th><th>%</th><th>Statut</th><th>Réalisation</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="footer">© ${new Date().getFullYear()} Stukely-Sud™ — Solutions municipales intelligentes — Tous droits réservés</div>
+    <div class="footer">© ${new Date().getFullYear()} Muni-Consul™ — Solutions municipales intelligentes — Tous droits réservés</div>
   </body></html>`;
 
   const win = window.open('', '_blank');
@@ -300,7 +300,7 @@ function exportAxePDF(axeId) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(180, 180, 180);
-    doc.text(`© ${new Date().getFullYear()} Stukely-Sud™ — Solutions municipales intelligentes — Document confidentiel`, ML, H - 22);
+    doc.text(`© ${new Date().getFullYear()} Muni-Consul™ — Solutions municipales intelligentes — Document confidentiel`, ML, H - 22);
     doc.text(`Page ${p} / ${pageCount}`, W - MR, H - 22, { align: 'right' });
     doc.setFillColor(...axeRGB);
     doc.rect(0, H - 4, W, 4, 'F');
@@ -540,7 +540,7 @@ function exportDashboardPDF() {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
   doc.setTextColor(180, 180, 180);
-  doc.text(`© ${now.getFullYear()} Stukely-Sud™ — Solutions municipales intelligentes — Document confidentiel`, ML, H - 16);
+  doc.text(`© ${now.getFullYear()} Muni-Consul™ — Solutions municipales intelligentes — Document confidentiel`, ML, H - 16);
   doc.text('1 / 1', W - MR, H - 16, { align: 'right' });
   doc.setFillColor(...PURPLE);
   doc.rect(0, H - 4, W, 4, 'F');
