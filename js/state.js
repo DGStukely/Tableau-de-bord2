@@ -60,7 +60,7 @@ function persistData() {
     localStorage.setItem(DATA_CACHE_KEY, JSON.stringify({
       axes:    APP.axes,
       actions: APP.actions,
-      jalons:  APP.jalons,
+      // jalons exclus — toujours chargés depuis SharePoint
       savedAt: new Date().toISOString()
     }));
   } catch(e) { console.warn('Impossible de sauvegarder les données hors ligne', e); }
