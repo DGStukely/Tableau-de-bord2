@@ -351,9 +351,9 @@ function exportDashboardPDF() {
   doc.setTextColor(200, 197, 240);
   doc.text(`Séance du conseil  ·  ${dateStr}`, ML, 34);
 
-  // Données live ou démo
-  const mode = window.isLiveData ? 'Données en direct' : 'Données locales';
-  doc.text(mode, W - MR, 24, { align: 'right' });
+  if (window.isLiveData) {
+    doc.text('Données en direct', W - MR, 24, { align: 'right' });
+  }
 
   y = 52;
 
