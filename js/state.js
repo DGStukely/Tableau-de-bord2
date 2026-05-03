@@ -74,7 +74,7 @@ function restoreData() {
     const d = JSON.parse(raw);
     if (d.axes    && d.axes.length)    APP.axes    = d.axes;
     if (d.actions && d.actions.length) APP.actions = d.actions;
-    if (d.jalons  && d.jalons.length)  APP.jalons  = d.jalons;
+    // Les jalons viennent toujours de SharePoint — ne pas restaurer depuis le cache
     invalidateAxeMap();
     return d.savedAt || true;
   } catch(e) { return false; }
