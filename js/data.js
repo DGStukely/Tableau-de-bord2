@@ -144,6 +144,14 @@ function loadDemoData() {
 
   APP.actions = [];
   APP.jalons  = [];
+  // Purger les jalons du cache localStorage (nettoyage définitif)
+  try {
+    const raw = localStorage.getItem('plan_strategique_data');
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d.jalons) { delete d.jalons; localStorage.setItem('plan_strategique_data', JSON.stringify(d)); }
+    }
+  } catch(e) {}
   isLiveData = false;
   showApp();
 }

@@ -685,7 +685,12 @@ async function confirmDeleteJalon(id) {
   if (!confirm('Supprimer ce jalon ?')) return;
   try {
     if (isLiveData && graphToken && spSiteId && !String(id).startsWith('local-')) {
-      await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${id}`, 'DELETE');
+      try {
+        await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${id}`, 'DELETE');
+      } catch (spErr) {
+        // 404 = déjà supprimé de SharePoint, on continue quand même
+        if (!spErr.message.includes('404')) throw spErr;
+      }
     }
     APP.jalons = APP.jalons.filter(x => String(x.id) !== String(id));
     renderTimeline();
