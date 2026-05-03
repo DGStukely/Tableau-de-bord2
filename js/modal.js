@@ -386,10 +386,10 @@ async function saveAction() {
       if (formEditId) {
         const idx = APP.actions.findIndex(x => String(x.id) === formEditId);
         if (idx !== -1) APP.actions[idx] = { ...APP.actions[idx], ...newAction };
-        showFormSuccess('Action mise à jour (mode démo — non sauvegardé dans SharePoint)');
+        showFormSuccess('Action mise à jour localement');
       } else {
         APP.actions.push(newAction);
-        showFormSuccess('Action ajoutée (mode démo — non sauvegardé dans SharePoint)');
+        showFormSuccess('Action ajoutée localement');
       }
     }
 
@@ -450,7 +450,7 @@ async function writeHistorique(actionId, actionTitre, type, newValues) {
 
     const utilisateur = currentAccount
       ? (currentAccount.name || currentAccount.username)
-      : 'Mode démo';
+      : 'Système';
 
     await graphFetch(
       `/sites/${spSiteId}/lists/${SP_CONFIG.lists.historique}/items`,

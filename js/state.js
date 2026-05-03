@@ -95,7 +95,7 @@ function updateOnlineStatus() {
     label.textContent = 'Données SharePoint';
   } else {
     dot.className   = 'sp-dot';
-    label.textContent = 'Mode démo';
+    label.textContent = 'Non connecté';
   }
 }
 

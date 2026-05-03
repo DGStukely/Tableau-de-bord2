@@ -113,7 +113,7 @@ async function loadSharePointData() {
     } else {
       // Afficher l'erreur réelle sur l'écran de chargement avant de basculer
       console.warn("Aucun cache disponible, mode démonstration:", err.message);
-      setLoadingStep("⚠️ Connexion SharePoint échouée — mode démo");
+      setLoadingStep("⚠️ Connexion SharePoint échouée");
       // Afficher un message visible pendant 4 secondes
       const stepEl = document.getElementById('loading-step');
       if (stepEl) {
@@ -121,7 +121,7 @@ async function loadSharePointData() {
         stepEl.innerHTML =
           `<strong>Accès SharePoint refusé</strong><br>
            <span style="font-size:.8rem;">${err.message}</span><br>
-           <span style="font-size:.75rem;opacity:.7;">Chargement en mode démo…</span>`;
+           <span style="font-size:.75rem;opacity:.7;">Chargement des données locales…</span>`;
       }
       setTimeout(() => loadDemoData(), 3000);
     }

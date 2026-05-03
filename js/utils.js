@@ -112,7 +112,7 @@ function openSharePoint() {
 }
 
 async function refreshData() {
-  if (!isLiveData) { alert("Mode démo actif. Configurez SharePoint pour actualiser les données réelles."); return; }
+  if (!isLiveData) { alert("Connexion SharePoint requise pour actualiser les données."); return; }
   document.querySelector('.nav-item[onclick*="refreshData"]').style.opacity = '0.5';
   try {
     await loadSharePointData();

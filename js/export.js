@@ -352,7 +352,7 @@ function exportDashboardPDF() {
   doc.text(`Séance du conseil  ·  ${dateStr}`, ML, 34);
 
   // Données live ou démo
-  const mode = window.isLiveData ? 'Données en direct' : 'Mode démonstration';
+  const mode = window.isLiveData ? 'Données en direct' : 'Données locales';
   doc.text(mode, W - MR, 24, { align: 'right' });
 
   y = 52;
