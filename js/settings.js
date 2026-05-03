@@ -2,34 +2,53 @@
    PARAMÈTRES — GESTION DES LISTES CONFIGURABLES
    ================================================================ */
 
-// Données configurables (persistées dans localStorage)
+// Deux clés séparées : configuration (responsables/statuts/priorités/thème) vs données (axes)
 const SETTINGS_KEY = 'plan_strategique_settings';
+const CONFIG_KEY   = 'plan_strategique_config';
 
 function loadSettings() {
   try {
+    // 1. Charger la configuration (responsables, statuts, priorités, thème)
+    const cfg = localStorage.getItem(CONFIG_KEY);
+    if (cfg) {
+      const c = JSON.parse(cfg);
+      if (c.responsables) APP.responsables = c.responsables;
+      if (c.statuts)      APP.statuts      = c.statuts;
+      if (c.priorites)    APP.priorites    = c.priorites;
+      if (c.autoCalcAxes !== undefined) APP.autoCalcAxes = c.autoCalcAxes;
+      if (c.theme)        applyTheme(c.theme);
+    }
+    // 2. Charger les axes (clé séparée pour ne pas affecter la config)
     const saved = localStorage.getItem(SETTINGS_KEY);
     if (saved) {
       const s = JSON.parse(saved);
-      if (s.axes)         { APP.axes = s.axes; invalidateAxeMap(); }
-      if (s.responsables) APP.responsables = s.responsables;
-      if (s.statuts)      APP.statuts      = s.statuts;
-      if (s.priorites)    APP.priorites    = s.priorites;
-      if (s.autoCalcAxes !== undefined) APP.autoCalcAxes = s.autoCalcAxes;
-      if (s.theme)        applyTheme(s.theme);
+      if (s.axes) { APP.axes = s.axes; invalidateAxeMap(); }
+      // Migration : récupérer responsables/statuts/priorités de l'ancienne clé si CONFIG_KEY vide
+      if (!cfg) {
+        if (s.responsables) APP.responsables = s.responsables;
+        if (s.statuts)      APP.statuts      = s.statuts;
+        if (s.priorites)    APP.priorites    = s.priorites;
+        if (s.autoCalcAxes !== undefined) APP.autoCalcAxes = s.autoCalcAxes;
+        if (s.theme)        applyTheme(s.theme);
+      }
     }
   } catch(e) { console.log('Settings load error', e); }
 }
 
 function persistSettings() {
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-      axes:         APP.axes,
+    // Sauvegarder la configuration séparément des axes
+    localStorage.setItem(CONFIG_KEY, JSON.stringify({
       responsables: APP.responsables,
       statuts:      APP.statuts,
       priorites:    APP.priorites,
       autoCalcAxes: APP.autoCalcAxes,
       theme:        APP.theme || 'grey'
     }));
+    // Sauvegarder les axes séparément
+    const existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    existing.axes = APP.axes;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing));
   } catch(e) {}
 }
 
@@ -446,7 +465,7 @@ function saveSettings(closeAfter) {
 
 function resetSettings() {
   if (!confirm('Réinitialiser tous les paramètres aux valeurs par défaut ?')) return;
-  localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(CONFIG_KEY);   // efface seulement responsables/statuts/priorités/thème
   APP.responsables = null;
   APP.statuts      = null;
   APP.priorites    = null;
