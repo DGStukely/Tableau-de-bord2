@@ -51,11 +51,7 @@ function setTheme(name) {
 // Données par défaut si non configurées
 function initDefaultSettings() {
   if (!APP.responsables) {
-    APP.responsables = [
-      { id:'r1', nom:'Jean-Marie Beaupré',  titre:'Directeur général' },
-      { id:'r2', nom:'Marie Tremblay',      titre:'Adjointe administrative' },
-      { id:'r3', nom:'Pierre Lavoie',       titre:'Responsable travaux' },
-    ];
+    APP.responsables = [];
   }
   if (!APP.statuts) {
     APP.statuts = [
