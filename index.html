@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Démo — Plan stratégique | Muni-Consul</title>
+  <title>Plan stratégique | Stukely-Sud</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -213,7 +213,21 @@
         </div>
         <div class="settings-pane" id="settings-pane-resps">
           <div id="settings-resps-list"></div>
-          <button onclick="addResponsable()" style="margin-top:.75rem;padding:.5rem 1rem;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;">+ Ajouter un responsable</button>
+          <div class="add-item-form" style="margin-top:.75rem;background:var(--c-surface-2);border-radius:8px;padding:10px 12px;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="add-item-field" style="flex:1;min-width:140px;">
+              <label>Nom</label>
+              <input type="text" id="new-resp-nom" placeholder="Prénom Nom" />
+            </div>
+            <div class="add-item-field" style="flex:1;min-width:140px;">
+              <label>Titre</label>
+              <input type="text" id="new-resp-titre" placeholder="Ex : Directeur général" />
+            </div>
+            <div class="add-item-field" style="flex:1;min-width:180px;">
+              <label>Courriel</label>
+              <input type="email" id="new-resp-courriel" placeholder="courriel@stukely-sud.ca" />
+            </div>
+            <button onclick="addResponsable()" style="height:32px;padding:0 1rem;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:inherit;align-self:flex-end;">+ Ajouter</button>
+          </div>
         </div>
         <div class="settings-pane" id="settings-pane-statuts">
           <div id="settings-statuts-list"></div>
