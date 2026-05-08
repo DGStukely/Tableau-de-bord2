@@ -368,6 +368,12 @@ async function saveAction() {
       if (dateDebut) spFields['Date_Debut'] = new Date(dateDebut).toISOString();
       if (budget)    spFields['Budget_Prevu'] = parseFloat(budget);
 
+      // Supprimer les champs null/undefined (SharePoint retourne 400 si null est envoyé)
+      Object.keys(spFields).forEach(k => {
+        if (spFields[k] === null || spFields[k] === undefined) delete spFields[k];
+      });
+      console.log('📤 SP fields envoyés:', JSON.stringify(spFields, null, 2));
+
       if (formEditId && !formEditId.startsWith('local-')) {
         // Mise à jour
         await graphFetch(
