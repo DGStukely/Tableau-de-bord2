@@ -372,15 +372,31 @@ async function saveAction() {
         await writeHistorique(formEditId, titre, 'Modification', newAction);
         showFormSuccess('Action mise à jour avec succès dans SharePoint !');
       } else {
-        // Création
+        // Création en 2 étapes : POST Title seul (toujours accepté), puis PATCH le reste
         const result = await graphFetch(
           `/sites/${spSiteId}/lists/${SP_CONFIG.lists.actions}/items`,
-          'POST', { fields: spFields }
+          'POST', { fields: { Title: titre } }
         );
-        newAction.id = result.id;
+        const newSpId = result.id;
+        newAction.id = newSpId;
+
+        // PATCH avec tous les autres champs
+        const patchFields = { ...spFields };
+        delete patchFields.Title;
+        if (Object.keys(patchFields).length > 0) {
+          try {
+            await graphFetch(
+              `/sites/${spSiteId}/lists/${SP_CONFIG.lists.actions}/items/${newSpId}/fields`,
+              'PATCH', patchFields
+            );
+          } catch(patchErr) {
+            console.error('❌ PATCH champs erreur:', patchErr.message, JSON.stringify(patchFields));
+          }
+        }
+
         APP.actions.push(newAction);
         // Enregistrer l'historique
-        await writeHistorique(result.id, titre, 'Création', newAction);
+        await writeHistorique(newSpId, titre, 'Création', newAction);
         showFormSuccess('Action créée avec succès dans SharePoint !');
       }
     } else {
