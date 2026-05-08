@@ -354,7 +354,8 @@
       <div class="form-grid">
         <div class="form-group full">
           <label class="form-label">Titre *</label>
-          <input id="f-titre" class="form-input" type="text" placeholder="Titre de l'objectif">
+          <input id="f-titre" class="form-input" type="text" placeholder="Titre de l'objectif" maxlength="255" oninput="document.getElementById('f-titre-count').textContent=this.value.length+' / 255'">
+          <div id="f-titre-count" style="font-size:11px;color:var(--c-text-3);text-align:right;margin-top:2px;">0 / 255</div>
         </div>
         <div class="form-group">
           <label class="form-label">Axe stratégique *</label>
