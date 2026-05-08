@@ -27,7 +27,7 @@ let graphToken = null;
 let spSiteId = null;
 let isLiveData = false;
 
-const SCOPES = ["Sites.Read.All", "User.Read"];
+const SCOPES = ["Sites.ReadWrite.All", "User.Read"];
 const IS_ELECTRON = window.__isElectronApp === true;
 const IS_LOCALHOST = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
 
