@@ -3,18 +3,29 @@
    ================================================================ */
 async function graphFetch(path, method = 'GET', body = null, extraHeaders = {}) {
   const url = path.startsWith("https://") ? path : `https://graph.microsoft.com/v1.0${path}`;
-  const opts = {
+
+  const makeOpts = () => ({
     method,
     headers: {
       Authorization: `Bearer ${graphToken}`,
       "Content-Type": "application/json",
       ...extraHeaders
+    },
+    ...(body && method !== 'GET' && method !== 'DELETE' ? { body: JSON.stringify(body) } : {})
+  });
+
+  let resp = await fetch(url, makeOpts());
+
+  // Si le jeton a expiré (401), le renouveler silencieusement et réessayer une fois
+  if (resp.status === 401 && msalInstance && currentAccount) {
+    try {
+      await acquireToken();
+      resp = await fetch(url, makeOpts());
+    } catch(e) {
+      throw new Error('Session expirée — veuillez recharger la page.');
     }
-  };
-  if (body && method !== 'GET' && method !== 'DELETE') {
-    opts.body = JSON.stringify(body);
   }
-  const resp = await fetch(url, opts);
+
   if (method === 'DELETE') return resp.ok ? {} : (() => { throw new Error('Delete failed ' + resp.status); })();
   if (!resp.ok) throw new Error(`Graph API error ${resp.status}: ${await resp.text()}`);
   return resp.json();
