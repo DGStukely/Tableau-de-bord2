@@ -293,6 +293,7 @@ async function saveAction() {
 
   if (!titre)    { showFormError('Le titre de l\'objectif est obligatoire.'); return; }
   if (!axe)      { showFormError('Veuillez choisir un axe stratégique.'); return; }
+  if (!resp && (APP.responsables || []).length > 0) { showFormError('Veuillez choisir un responsable.'); return; }
   if (!echeance) { showFormError('La date d\'échéance est obligatoire.'); return; }
 
   // Ajustement automatique du statut selon la date d'échéance
@@ -346,8 +347,8 @@ async function saveAction() {
       };
 
       // Sauvegarder le responsable et son courriel
+      spFields['Responsable_Nom'] = resp || '—';
       if (resp) {
-        spFields['Responsable_Nom'] = resp;
         // Chercher le courriel du responsable dans les paramètres
         const respObj = (APP.responsables || []).find(r => r.nom === resp);
         if (respObj && respObj.courriel) {
