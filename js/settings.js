@@ -500,6 +500,50 @@ function saveSettings(closeAfter) {
   }
 }
 
+async function syncToSharePoint() {
+  if (!isLiveData || !graphToken || !spSiteId) {
+    showToast('Non connecté à SharePoint — impossible de synchroniser.', 'error'); return;
+  }
+  const btn = document.getElementById('btn-sync-sp');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Synchronisation…'; }
+
+  let axesOk = 0, axesErr = 0;
+
+  // 1. Pousser les axes sans spId vers SharePoint
+  for (let i = 0; i < APP.axes.length; i++) {
+    const axe = APP.axes[i];
+    if (axe.spId) { axesOk++; continue; }
+    try {
+      const res = await graphFetch(
+        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/items`,
+        'POST',
+        { fields: {
+          Title:           axe.nom,
+          Identifiant:     axe.id,
+          Avancement:      axe.pct || 0,
+          Couleur:         axe.color,
+          CouleurClaire:   axe.light,
+          Description_Axe: axe.desc || ''
+        }}
+      );
+      APP.axes[i] = { ...axe, spId: res.id || res.fields?.id };
+      axesOk++;
+    } catch(e) { axesErr++; console.warn('Axe sync error', axe.id, e.message); }
+  }
+  invalidateAxeMap();
+  persistSettings();
+
+  // 2. Pousser la configuration (responsables, statuts, priorités)
+  await persistSpConfig();
+
+  const msg = axesErr > 0
+    ? `Synchronisation partielle : ${axesOk} axe(s) OK, ${axesErr} erreur(s).`
+    : `Synchronisation réussie — ${axesOk} axe(s) et configuration envoyés vers SharePoint.`;
+  showToast(msg, axesErr > 0 ? 'error' : 'success');
+
+  if (btn) { btn.disabled = false; btn.textContent = '☁ Synchroniser vers SharePoint'; }
+}
+
 function resetSettings() {
   if (!confirm('Réinitialiser tous les paramètres aux valeurs par défaut ?')) return;
   localStorage.removeItem(CONFIG_KEY);   // efface seulement responsables/statuts/priorités/thème
