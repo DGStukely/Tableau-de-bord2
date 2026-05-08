@@ -355,18 +355,33 @@ async function saveAction() {
         Commentaire_Suivi: comment
       };
 
-      // Sauvegarder le responsable et son courriel
-      spFields['Responsable_Nom'] = resp || '—';
+      // Découvrir les vrais noms internes des colonnes personnalisées
+      if (!window._actionColMap) {
+        try {
+          const cols = await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.actions}/columns`);
+          window._actionColMap = {};
+          (cols.value || []).forEach(c => {
+            if (!c.readOnly && !c.hidden && !(c.name||'').startsWith('_')) {
+              window._actionColMap[c.displayName] = c.name;
+            }
+          });
+          console.log('🗂 Colonnes Actions_Plan:', window._actionColMap);
+        } catch(e) { window._actionColMap = {}; }
+      }
+      const cm = window._actionColMap;
+      const fn = (display, fallback) => cm[display] || fallback;
+
+      // Sauvegarder le responsable et son courriel avec noms internes réels
       if (resp) {
-        // Chercher le courriel du responsable dans les paramètres
+        spFields[fn('Responsable', 'Responsable_Nom')] = resp;
         const respObj = (APP.responsables || []).find(r => r.nom === resp);
         if (respObj && respObj.courriel) {
-          spFields['Responsable_Courriel'] = respObj.courriel;
+          spFields[fn('Courriel responsable', 'Responsable_Courriel')] = respObj.courriel;
         }
       }
 
-      if (dateDebut) spFields['Date_Debut'] = new Date(dateDebut).toISOString();
-      if (budget)    spFields['Budget_Prevu'] = parseFloat(budget);
+      if (dateDebut) spFields[fn('Date de debut', 'Date_Debut')] = new Date(dateDebut).toISOString();
+      if (budget)    spFields[fn('Budget prevu ($)', 'Budget_Prevu')] = parseFloat(budget);
 
       // Supprimer les champs null/undefined/vides (SharePoint retourne 400 si null est envoyé)
       Object.keys(spFields).forEach(k => {
