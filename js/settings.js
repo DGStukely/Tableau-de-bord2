@@ -152,7 +152,7 @@ function renderSettingsAxes() {
     </div>`).join('');
 }
 
-function addAxe() {
+async function addAxe() {
   const id     = document.getElementById('new-axe-id').value.trim().toUpperCase();
   const nom    = document.getElementById('new-axe-nom').value.trim();
   const color  = document.getElementById('new-axe-couleur').value;
@@ -160,7 +160,31 @@ function addAxe() {
   if (!id || !nom) { alert('Code et nom obligatoires.'); return; }
   if (APP.axes.find(a => a.id === id)) { alert('Ce code existe déjà.'); return; }
   const light = hexLight(color);
-  APP.axes.push({ id, nom, color, light, pct: 0, desc });
+  const newAxe = { id, nom, color, light, pct: 0, desc };
+
+  // Créer dans SharePoint si connecté
+  if (isLiveData && graphToken && spSiteId) {
+    try {
+      const res = await graphFetch(
+        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/items`,
+        'POST',
+        { fields: {
+          Title:           nom,
+          Identifiant:     id,
+          Avancement:      0,
+          Couleur:         color,
+          CouleurClaire:   light,
+          Description_Axe: desc
+        }}
+      );
+      newAxe.spId = res.id || res.fields?.id;
+      showToast('Axe créé dans SharePoint', 'success');
+    } catch(e) {
+      showToast('Axe sauvegardé localement (erreur SharePoint : ' + e.message + ')', 'error');
+    }
+  }
+
+  APP.axes.push(newAxe);
   invalidateAxeMap();
   persistSettings();
   document.getElementById('new-axe-id').value = '';
@@ -180,8 +204,16 @@ function toggleAutoCalc(enabled) {
   }
 }
 
-function removeAxe(i) {
-  if (!confirm('Supprimer cet axe ? Les actions associées ne seront pas supprimées.')) return;
+async function removeAxe(i) {
+  if (!confirm('Supprimer cet axe ? Les objectifs associés ne seront pas supprimés.')) return;
+  const axe = APP.axes[i];
+  if (isLiveData && graphToken && spSiteId && axe.spId) {
+    try {
+      await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/items/${axe.spId}`, 'DELETE');
+    } catch(e) {
+      if (!e.message.includes('404')) { showToast('Erreur suppression SharePoint : ' + e.message, 'error'); return; }
+    }
+  }
   APP.axes.splice(i, 1);
   invalidateAxeMap();
   persistSettings();
