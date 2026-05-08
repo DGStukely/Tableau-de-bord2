@@ -335,13 +335,22 @@ async function saveAction() {
       const axeObj = axeMap[axe];
       const axeLabel = axeObj ? axe + ' – ' + axeObj.nom : axe;
 
+      // Normaliser vers les valeurs exactes des choix SharePoint (sans accents, minuscules)
+      const spStatutMap = {
+        'à faire': 'a faire', 'a faire': 'a faire',
+        'en cours': 'en cours', 'terminée': 'terminee', 'terminee': 'terminee',
+        'en retard': 'en retard', 'en attente': 'en attente'
+      };
+      const spStatut = spStatutMap[(statutFinal || '').toLowerCase()] || statutFinal;
+      const spPrio   = (priorite || 'moyenne').toLowerCase();
+
       const spFields = {
         Title:            titre,
         Axe_Strategique:  axeLabel,
-        Priorite:         priorite.charAt(0).toUpperCase() + priorite.slice(1),
+        Priorite:         spPrio,
         Date_Echeance:    echeance ? new Date(echeance).toISOString() : null,
         Avancement:       pct,
-        Statut:           statutFinal.charAt(0).toUpperCase() + statutFinal.slice(1),
+        Statut:           spStatut,
         Description:      desc,
         Commentaire_Suivi: comment
       };
