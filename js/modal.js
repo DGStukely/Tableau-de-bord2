@@ -368,9 +368,9 @@ async function saveAction() {
       if (dateDebut) spFields['Date_Debut'] = new Date(dateDebut).toISOString();
       if (budget)    spFields['Budget_Prevu'] = parseFloat(budget);
 
-      // Supprimer les champs null/undefined (SharePoint retourne 400 si null est envoyé)
+      // Supprimer les champs null/undefined/vides (SharePoint retourne 400 si null est envoyé)
       Object.keys(spFields).forEach(k => {
-        if (spFields[k] === null || spFields[k] === undefined) delete spFields[k];
+        if (spFields[k] === null || spFields[k] === undefined || spFields[k] === '') delete spFields[k];
       });
       console.log('📤 SP fields envoyés:', JSON.stringify(spFields, null, 2));
 
@@ -419,7 +419,10 @@ async function saveAction() {
     setTimeout(() => { closeFormModal(); }, 1500);
 
   } catch (err) {
-    showFormError('Erreur : ' + err.message);
+    console.error('❌ saveAction erreur:', err);
+    const errEl = document.getElementById('form-error');
+    if (errEl) { errEl.textContent = 'Erreur : ' + err.message; errEl.classList.add('show'); }
+    else { alert('Erreur : ' + err.message); }
   } finally {
     document.getElementById('form-saving').classList.remove('show');
     document.querySelectorAll('.form-btn-save, .form-btn-cancel, .form-btn-delete').forEach(b => b.disabled = false);
