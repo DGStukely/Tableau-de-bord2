@@ -39,6 +39,26 @@ async function persistSpConfig() {
     savedAt:      new Date().toISOString()
   });
   try {
+    // Si l'ID n'est pas connu, chercher l'item existant avant d'en créer un nouveau
+    if (!_spConfigItemId) {
+      const existing = await graphFetch(
+        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items?expand=fields($select=Title)&$filter=fields/Title eq 'dashboard_config'&$top=10`
+      );
+      const items = existing.value || [];
+      if (items.length > 0) {
+        _spConfigItemId = items[0].id;
+        // Supprimer les doublons éventuels (items 2, 3, …)
+        for (let i = 1; i < items.length; i++) {
+          try {
+            await graphFetch(
+              `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items/${items[i].id}`,
+              'DELETE'
+            );
+          } catch(e2) { console.warn('Doublon config non supprimé:', e2.message); }
+        }
+      }
+    }
+
     if (_spConfigItemId) {
       await graphFetch(
         `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items/${_spConfigItemId}/fields`,
