@@ -174,12 +174,9 @@ async function addAxe() {
         `/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/items`,
         'POST',
         { fields: {
-          Title:           nom,
-          Identifiant:     id,
-          Avancement:      0,
-          Couleur:         color,
-          CouleurClaire:   light,
-          Description_Axe: desc
+          Title:        nom,
+          Identifiant:  id,
+          Avancement:   0
         }}
       );
       newAxe.spId = res.id || res.fields?.id;
@@ -255,7 +252,7 @@ async function saveAxe(i) {
       await graphFetch(
         `/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/items/${axeOld.spId}/fields`,
         'PATCH',
-        { Avancement: pct, Description_Axe: desc }
+        { Avancement: pct }
       );
     } catch(e) {
       console.warn('Mise à jour SharePoint axe échouée :', e.message);
@@ -510,22 +507,29 @@ async function syncToSharePoint() {
   let axesOk = 0, axesErr = 0;
   const errMessages = [];
 
+  // Découvrir les noms internes réels des colonnes couleur
+  let colCouleur = null, colCouleurClaire = null;
+  try {
+    const cols = await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/columns`);
+    (cols.value || []).forEach(c => {
+      const dn = (c.displayName || '').toLowerCase();
+      if (dn.includes('couleur') && !dn.includes('clair')) colCouleur = c.name;
+      if (dn.includes('clair'))                             colCouleurClaire = c.name;
+    });
+    console.log('Colonnes couleur détectées:', colCouleur, colCouleurClaire);
+  } catch(e) { console.warn('Impossible de lire les colonnes:', e.message); }
+
   // 1. Pousser les axes sans spId vers SharePoint
   for (let i = 0; i < APP.axes.length; i++) {
     const axe = APP.axes[i];
     if (axe.spId) { axesOk++; continue; }
     try {
+      const fields = { Title: axe.nom, Identifiant: axe.id, Avancement: axe.pct || 0 };
+      if (colCouleur)       fields[colCouleur]       = axe.color;
+      if (colCouleurClaire) fields[colCouleurClaire]  = axe.light;
       const res = await graphFetch(
         `/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/items`,
-        'POST',
-        { fields: {
-          Title:           axe.nom,
-          Identifiant:     axe.id,
-          Avancement:      axe.pct || 0,
-          Couleur:         axe.color,
-          CouleurClaire:   axe.light,
-          Description_Axe: axe.desc || ''
-        }}
+        'POST', { fields }
       );
       APP.axes[i] = { ...axe, spId: res.id || res.fields?.id };
       axesOk++;
