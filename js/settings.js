@@ -50,6 +50,11 @@ function persistSettings() {
     existing.axes = APP.axes;
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing));
   } catch(e) {}
+  // Synchroniser vers SharePoint si connecté (deboncé)
+  if (typeof persistSpConfig === 'function') {
+    clearTimeout(window._spConfigTimer);
+    window._spConfigTimer = setTimeout(() => persistSpConfig(), 1500);
+  }
 }
 
 function applyTheme(name) {

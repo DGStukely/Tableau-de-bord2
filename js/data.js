@@ -1,4 +1,60 @@
 /* ================================================================
+   CONFIGURATION SHAREPOINT — Lecture / Écriture
+   Liste "Configuration" : un seul item Title="dashboard_config"
+   ================================================================ */
+let _spConfigItemId = null;  // ID SharePoint de l'item de config
+
+async function loadSpConfig() {
+  if (!isLiveData || !graphToken || !spSiteId) return;
+  try {
+    const res = await graphFetch(
+      `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items?expand=fields($select=Title,Valeur)&$filter=fields/Title eq 'dashboard_config'&$top=1`
+    );
+    const items = res.value || [];
+    if (items.length > 0) {
+      _spConfigItemId = items[0].id;
+      const valeur = items[0].fields?.Valeur;
+      if (valeur) {
+        try {
+          const cfg = JSON.parse(valeur);
+          if (cfg.responsables && cfg.responsables.length) APP.responsables = cfg.responsables;
+          if (cfg.statuts      && cfg.statuts.length)      APP.statuts      = cfg.statuts;
+          if (cfg.priorites    && cfg.priorites.length)    APP.priorites    = cfg.priorites;
+          if (cfg.autoCalcAxes !== undefined)              APP.autoCalcAxes = cfg.autoCalcAxes;
+          // Synchroniser aussi vers localStorage
+          localStorage.setItem('plan_strategique_config', JSON.stringify(cfg));
+        } catch(e) { console.warn('Config SP parse error', e); }
+      }
+    }
+  } catch(e) { console.warn('loadSpConfig error:', e.message); }
+}
+
+async function persistSpConfig() {
+  if (!isLiveData || !graphToken || !spSiteId) return;
+  const valeur = JSON.stringify({
+    responsables: APP.responsables || [],
+    statuts:      APP.statuts      || [],
+    priorites:    APP.priorites    || [],
+    autoCalcAxes: APP.autoCalcAxes || false,
+    savedAt:      new Date().toISOString()
+  });
+  try {
+    if (_spConfigItemId) {
+      await graphFetch(
+        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items/${_spConfigItemId}/fields`,
+        'PATCH', { Valeur: valeur }
+      );
+    } else {
+      const res = await graphFetch(
+        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items`,
+        'POST', { fields: { Title: 'dashboard_config', Valeur: valeur } }
+      );
+      _spConfigItemId = res.id;
+    }
+  } catch(e) { console.warn('persistSpConfig error:', e.message); }
+}
+
+/* ================================================================
    3. MAPPING DES CHAMPS SHAREPOINT → MODÈLE INTERNE
    NOTE : Adaptez les noms de champs selon votre liste SharePoint
    ================================================================ */
@@ -70,10 +126,12 @@ async function loadSharePointData() {
     const rawActions = await getListItems(SP_CONFIG.lists.actions);
     setLoadingStep("Chargement des jalons…");
     const rawJalons  = await getListItems(SP_CONFIG.lists.jalons);
+    setLoadingStep("Chargement de la configuration…");
+    await loadSpConfig();
 
     // Charger les axes SharePoint
     const spAxes = rawAxes.map(mapAxe);
-    
+
     // Charger les paramètres sauvegardés (axes perso, responsables, etc.)
     loadSettings();
     
