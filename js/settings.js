@@ -508,6 +508,7 @@ async function syncToSharePoint() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Synchronisation…'; }
 
   let axesOk = 0, axesErr = 0;
+  const errMessages = [];
 
   // 1. Pousser les axes sans spId vers SharePoint
   for (let i = 0; i < APP.axes.length; i++) {
@@ -528,7 +529,11 @@ async function syncToSharePoint() {
       );
       APP.axes[i] = { ...axe, spId: res.id || res.fields?.id };
       axesOk++;
-    } catch(e) { axesErr++; console.warn('Axe sync error', axe.id, e.message); }
+    } catch(e) {
+      axesErr++;
+      errMessages.push(`[${axe.id}] ${e.message}`);
+      console.error('Axe sync error', axe.id, e);
+    }
   }
   invalidateAxeMap();
   persistSettings();
@@ -536,10 +541,11 @@ async function syncToSharePoint() {
   // 2. Pousser la configuration (responsables, statuts, priorités)
   await persistSpConfig();
 
-  const msg = axesErr > 0
-    ? `Synchronisation partielle : ${axesOk} axe(s) OK, ${axesErr} erreur(s).`
-    : `Synchronisation réussie — ${axesOk} axe(s) et configuration envoyés vers SharePoint.`;
-  showToast(msg, axesErr > 0 ? 'error' : 'success');
+  if (axesErr > 0) {
+    showToast(`${axesOk} OK, ${axesErr} erreur(s) : ${errMessages[0]}`, 'error');
+  } else {
+    showToast(`Synchronisation réussie — ${axesOk} axe(s) et configuration envoyés.`, 'success');
+  }
 
   if (btn) { btn.disabled = false; btn.textContent = '☁ Synchroniser vers SharePoint'; }
 }
