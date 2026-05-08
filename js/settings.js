@@ -512,6 +512,8 @@ async function syncToSharePoint() {
   try {
     const cols = await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/columns`);
     (cols.value || []).forEach(c => {
+      // Ignorer les colonnes système (lecture seule, cachées, ou nom interne commençant par _)
+      if (c.readOnly || c.hidden || (c.name || '').startsWith('_')) return;
       const dn = (c.displayName || '').toLowerCase();
       if (dn.includes('couleur') && !dn.includes('clair')) colCouleur = c.name;
       if (dn.includes('clair'))                             colCouleurClaire = c.name;
