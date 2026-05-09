@@ -365,18 +365,18 @@ function renderAxes() {
    9. RENDU — TIMELINE
    ================================================================ */
 function renderTimeline() {
-  const axeMap = getAxeMap();
-
   const sorted = [...APP.jalons].sort((a,b) => new Date(a.date) - new Date(b.date));
   const listEl = document.getElementById('timeline-list');
   if (!sorted.length) {
     listEl.innerHTML = `<div style="text-align:center;color:var(--c-text-3);padding:2rem;font-size:.9rem;">Aucun jalon — cliquez <strong>+ Nouveau jalon</strong> pour en créer un.</div>`;
     return;
   }
+  const axeMap = getAxeMap();
   listEl.innerHTML = sorted.map((item, i) => {
-    const axe = axeMap[item.axe];
-    const sm  = STATUS_MAP[item.statut] || STATUS_MAP['à faire'];
-    const isLast = i === sorted.length - 1;
+    const action  = APP.actions.find(a => String(a.id) === String(item.actionId));
+    const axe     = action ? (axeMap[action.axe] || {}) : {};
+    const sm      = STATUS_MAP[item.statut] || STATUS_MAP['à faire'];
+    const isLast  = i === sorted.length - 1;
     return `
       <div class="tl-item">
         <div class="tl-left">
@@ -401,7 +401,7 @@ function renderTimeline() {
           </div>
           <div class="tl-meta">
             <span>${fmtDate(item.date)}</span>
-            ${axe ? `<span style="color:${h(axe.color)}">${h(axe.nom)}</span>` : ''}
+            ${action ? `<span style="color:${h(axe.color||'#888')};cursor:pointer;" onclick="openModal('${h(String(action.id))}')" title="Voir l'objectif">${h(action.titre)}</span>` : ''}
             <span class="pill ${sm.pill}">${h(item.statut)}</span>
           </div>
         </div>

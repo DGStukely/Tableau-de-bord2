@@ -9,7 +9,42 @@ function openModal(id) {
   const sm  = STATUS_MAP[a.statut] || STATUS_MAP['à faire'];
 
   const _modalEmail = (() => { const r = (APP.responsables||[]).find(x=>x.nom===a.resp); const e = safeEmail(r && r.courriel); return e ? `<br><a href="mailto:${e}" style="font-size:12px;color:var(--c-blue);">${h(e)}</a>` : ''; })();
-  const _ci = a.statut !== 'terminée' ? calcCible(a) : null;
+
+  // Jalons associés à cet objectif
+  const _jp = getJalonProgress(a.id);
+  const _pct = _jp ? _jp.pct : a.pct;
+  const _ci = a.statut !== 'terminée' ? calcCible({ ...a, pct: _pct }) : null;
+
+  // Section jalons
+  const _jalonSection = (() => {
+    if (!_jp) {
+      // Pas de jalons — bouton pour en ajouter
+      return `<div style="margin:12px 0 4px;">
+        <div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Jalons</div>
+        <button class="btn" onclick="closeModal();openJalonModal(null, '${a.id}')" style="font-size:12px;padding:4px 10px;">
+          + Ajouter un jalon
+        </button>
+      </div>`;
+    }
+    const rows = _jp.jalons.sort((x,y) => (x.date||'').localeCompare(y.date||'')).map(j => {
+      const jsm = STATUS_MAP[j.statut] || STATUS_MAP['à faire'];
+      return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--c-border-light);">
+        <span style="width:8px;height:8px;border-radius:50%;background:${jsm.dot};flex-shrink:0;"></span>
+        <span style="flex:1;font-size:12.5px;">${h(j.titre)}</span>
+        <span style="font-size:11px;color:var(--c-text-3);white-space:nowrap;">${fmtDate(j.date)}</span>
+        <span class="pill ${jsm.pill}" style="font-size:10px;">${h(j.statut)}</span>
+        <button onclick="closeModal();openJalonModal('${h(String(j.id))}')" style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:1px 3px;" title="Modifier">✏️</button>
+      </div>`;
+    }).join('');
+    return `<div style="margin:12px 0 4px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.05em;">Jalons — ${_jp.done}/${_jp.total} terminés</div>
+        <button class="btn" onclick="closeModal();openJalonModal(null, '${a.id}')" style="font-size:11px;padding:2px 8px;">+ Ajouter</button>
+      </div>
+      ${rows}
+    </div>`;
+  })();
+
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-head">
       <div id="modal-action-title" style="font-size:15px;font-weight:600;color:var(--c-text);line-height:1.4;">${h(a.titre)}</div>
@@ -21,13 +56,17 @@ function openModal(id) {
     <div class="field-row"><span class="field-label">Échéance</span><span class="field-value">${fmtDate(a.echeance)}</span></div>
     ${a.dateDebut ? `<div class="field-row"><span class="field-label">Date de début</span><span class="field-value">${fmtDate(a.dateDebut)}</span></div>` : ''}
     <div class="field-row"><span class="field-label">Statut</span><span class="field-value"><span class="pill ${sm.pill}">${h(a.statut)}</span></span></div>
-    <div class="field-row"><span class="field-label">Avancement réel</span><span class="field-value">${h(a.pct)}%</span></div>
+    <div class="field-row">
+      <span class="field-label">Avancement${_jp ? ' (jalons)' : ''}</span>
+      <span class="field-value" style="font-weight:600;">${_pct}%${_jp ? ` <span style="font-size:11px;color:var(--c-text-3);font-weight:400;">(${_jp.done}/${_jp.total} jalons)</span>` : ''}</span>
+    </div>
     ${_ci ? `<div class="field-row"><span class="field-label">Cible attendue</span><span class="field-value" style="display:flex;align-items:center;gap:8px;">${_ci.cible}%<span style="font-size:12px;font-weight:600;padding:1px 7px;border-radius:99px;background:${_ci.gap >= 0 ? '#DCFCE7' : '#FEE2E2'};color:${_ci.gap >= 0 ? '#166534' : '#991B1B'};">${_ci.gap > 0 ? '▲ +' : _ci.gap < 0 ? '▼ ' : ''}${_ci.gap}%</span></span></div>` : ''}
     <div style="margin-bottom:12px;">
       <div class="progress-wrap" style="height:8px;">
-        <div class="progress-fill" style="width:${h(a.pct)}%;background:${h(sm.dot)}"></div>
+        <div class="progress-fill" style="width:${_pct}%;background:${h(sm.dot)}"></div>
       </div>
     </div>
+    ${_jalonSection}
     ${a.desc ? `<div class="field-row"><span class="field-label">Réalisation</span></div><div class="modal-desc">${h(a.desc)}</div>` : ''}
     ${isLiveData ? `<a href="https://${SP_CONFIG.tenantDomain}${SP_CONFIG.siteRelativeUrl}/Lists/${SP_CONFIG.lists.actions}/DispForm.aspx?ID=${a.id}" target="_blank" class="btn" style="margin-top:14px;text-decoration:none;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
@@ -585,7 +624,7 @@ async function deleteAction(skipConfirm = false) {
    ================================================================ */
 let jalonEditId = null;
 
-function openJalonModal(id = null) {
+function openJalonModal(id = null, preselectedActionId = null) {
   jalonEditId = id;
   const modal = document.getElementById('jalon-modal-bg');
   const titleEl = document.getElementById('jalon-modal-title');
@@ -594,14 +633,28 @@ function openJalonModal(id = null) {
   document.getElementById('jalon-form-saving').classList.remove('show');
   errEl.classList.remove('show');
 
-  // Remplir le select des axes
-  const axeSel = document.getElementById('jf-axe');
-  axeSel.innerHTML = '<option value="">— Aucun —</option>';
-  APP.axes.forEach(a => {
+  // Remplir le select des objectifs (trié par axe puis titre)
+  const objSel = document.getElementById('jf-objectif');
+  objSel.innerHTML = '<option value="">— Aucun —</option>';
+  const axeMap = getAxeMap();
+  const sortedActions = [...APP.actions].sort((a, b) => {
+    const axeA = (axeMap[a.axe] || {}).nom || a.axe || '';
+    const axeB = (axeMap[b.axe] || {}).nom || b.axe || '';
+    return axeA.localeCompare(axeB, 'fr') || (a.titre || '').localeCompare(b.titre || '', 'fr');
+  });
+  let lastAxe = null;
+  sortedActions.forEach(a => {
+    const axeNom = (axeMap[a.axe] || {}).nom || a.axe || '—';
+    if (axeNom !== lastAxe) {
+      const grp = document.createElement('optgroup');
+      grp.label = axeNom;
+      objSel.appendChild(grp);
+      lastAxe = axeNom;
+    }
     const opt = document.createElement('option');
-    opt.value = a.id;
-    opt.textContent = a.nom;
-    axeSel.appendChild(opt);
+    opt.value = String(a.id);
+    opt.textContent = a.titre;
+    objSel.lastChild.appendChild(opt);
   });
 
   // Bouton "+ Nouveau" visible seulement en création
@@ -614,18 +667,18 @@ function openJalonModal(id = null) {
     if (!j) return;
     titleEl.textContent = 'Modifier le jalon';
     deleteBtn.style.display = '';
-    document.getElementById('jf-titre').value  = j.titre || '';
-    document.getElementById('jf-date').value   = j.date  || '';
-    document.getElementById('jf-statut').value = j.statut || 'à faire';
-    document.getElementById('jf-axe').value    = j.axe   || '';
+    document.getElementById('jf-titre').value     = j.titre    || '';
+    document.getElementById('jf-date').value      = j.date     || '';
+    document.getElementById('jf-statut').value    = j.statut   || 'à faire';
+    document.getElementById('jf-objectif').value  = j.actionId || '';
   } else {
-    // Mode création
+    // Mode création — pré-sélectionner l'objectif si passé en paramètre
     titleEl.textContent = 'Nouveau jalon';
     deleteBtn.style.display = 'none';
-    document.getElementById('jf-titre').value  = '';
-    document.getElementById('jf-date').value   = '';
-    document.getElementById('jf-statut').value = 'à faire';
-    document.getElementById('jf-axe').value    = '';
+    document.getElementById('jf-titre').value     = '';
+    document.getElementById('jf-date').value      = '';
+    document.getElementById('jf-statut').value    = 'à faire';
+    document.getElementById('jf-objectif').value  = preselectedActionId ? String(preselectedActionId) : '';
   }
 
   modal.classList.add('open');
@@ -637,10 +690,10 @@ function closeJalonModal() {
 }
 
 async function saveJalon(andNew = false) {
-  const titre  = document.getElementById('jf-titre').value.trim();
-  const date   = document.getElementById('jf-date').value;
-  const statut = document.getElementById('jf-statut').value;
-  const axe    = document.getElementById('jf-axe').value;
+  const titre    = document.getElementById('jf-titre').value.trim();
+  const date     = document.getElementById('jf-date').value;
+  const statut   = document.getElementById('jf-statut').value;
+  const actionId = document.getElementById('jf-objectif').value;
 
   const errEl = document.getElementById('jalon-form-error');
   errEl.classList.remove('show');
@@ -652,20 +705,20 @@ async function saveJalon(andNew = false) {
   document.querySelectorAll('#jalon-modal-bg .form-btn-save, #jalon-modal-bg .form-btn-cancel, #jalon-modal-bg .form-btn-delete').forEach(b => b.disabled = true);
 
   const newJalon = {
-    id:     jalonEditId || ('local-' + Date.now()),
-    titre:  titre,
-    date:   date,
-    statut: statut,
-    axe:    axe
+    id:       jalonEditId || ('local-' + Date.now()),
+    titre:    titre,
+    date:     date,
+    statut:   statut,
+    actionId: actionId
   };
 
   try {
     if (isLiveData && graphToken && spSiteId) {
       const spFields = {
-        Title:  titre,
-        Date:   date + 'T00:00:00Z',
-        Statut: statut,
-        Axe:    axe
+        Title:    titre,
+        Date:     date + 'T00:00:00Z',
+        Statut:   statut,
+        ActionId: actionId || null
       };
       if (jalonEditId && !String(jalonEditId).startsWith('local-')) {
         await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonEditId}/fields`, 'PATCH', spFields);

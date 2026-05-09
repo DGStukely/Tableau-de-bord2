@@ -61,6 +61,19 @@ function getPrioBadgeStyle(prioId) {
   return defaults[prioId] ? `background:${defaults[prioId]};` : 'background:#EF9F27;';
 }
 
+/**
+ * Calcule l'avancement d'un objectif à partir de ses jalons.
+ * Retourne null si l'objectif n'a aucun jalon (=> utiliser le % manuel).
+ * Retourne un objet { pct, total, done } sinon.
+ */
+function getJalonProgress(actionId) {
+  if (!APP.jalons || !actionId) return null;
+  const jalons = APP.jalons.filter(j => String(j.actionId) === String(actionId));
+  if (!jalons.length) return null;
+  const done = jalons.filter(j => j.statut === 'terminée').length;
+  return { pct: Math.round(done / jalons.length * 100), done, total: jalons.length, jalons };
+}
+
 /* ================================================================
    PERSISTANCE DES DONNÉES (mode hors ligne)
    ================================================================ */

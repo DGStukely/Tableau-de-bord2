@@ -177,10 +177,11 @@ function mapAction(fields) {
 
 function mapJalon(fields) {
   return {
-    date:    fields.Date             || fields.DateJalon,
-    titre:   fields.Title            || fields.Titre,
-    axe:     fields.Axe              || "",
-    statut:  (fields.Statut          || "à faire").toLowerCase(),
+    id:       fields._spId           || fields.id || '',
+    date:     fields.Date            || fields.DateJalon,
+    titre:    fields.Title           || fields.Titre,
+    actionId: fields.ActionId        || "",   // lien vers l'objectif (SP item ID)
+    statut:   (fields.Statut         || "à faire").toLowerCase(),
   };
 }
 
