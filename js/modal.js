@@ -927,9 +927,12 @@ async function toggleJalon(jalonId, checked) {
     }
   }
 
-  // Rafraîchir la timeline et le détail si ouvert
+  // Rafraîchir tous les panneaux affectés
+  calcAvancementAxes(); // recalcule axe.pct en tenant compte des jalons
   renderTimeline();
   renderActions();
+  renderApercu();
+  renderAxes();
   // Si le panneau de détail de l'objectif parent est ouvert, le rafraîchir
   if (j.actionId) {
     const modalBg = document.getElementById('modal-bg');

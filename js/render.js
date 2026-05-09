@@ -4,11 +4,15 @@
 function calcAvancementAxes() {
   if (!APP.autoCalcAxes) return; // Calcul auto désactivé
   // Calculer automatiquement l'avancement de chaque axe
-  // basé sur la moyenne des actions associées
+  // en tenant compte des jalons (si définis) pour chaque objectif
   APP.axes.forEach(axe => {
     const actionsAxe = APP.actions.filter(a => a.axe === axe.id);
     if (actionsAxe.length > 0) {
-      const total = actionsAxe.reduce((sum, a) => sum + (parseInt(a.pct) || 0), 0);
+      const total = actionsAxe.reduce((sum, a) => {
+        // Priorité : avancement calculé depuis les jalons cochés
+        const jp = (typeof getJalonProgress === 'function') ? getJalonProgress(a.id) : null;
+        return sum + (jp ? jp.pct : (parseInt(a.pct) || 0));
+      }, 0);
       axe.pct = Math.round(total / actionsAxe.length);
     }
   });
