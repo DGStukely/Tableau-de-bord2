@@ -604,6 +604,10 @@ function openJalonModal(id = null) {
     axeSel.appendChild(opt);
   });
 
+  // Bouton "+ Nouveau" visible seulement en création
+  const saveNewBtn = document.getElementById('jalon-btn-save-new');
+  if (saveNewBtn) saveNewBtn.style.display = id ? 'none' : '';
+
   if (id) {
     // Mode édition
     const j = APP.jalons.find(x => String(x.id) === String(id));
@@ -632,7 +636,7 @@ function closeJalonModal() {
   jalonEditId = null;
 }
 
-async function saveJalon() {
+async function saveJalon(andNew = false) {
   const titre  = document.getElementById('jf-titre').value.trim();
   const date   = document.getElementById('jf-date').value;
   const statut = document.getElementById('jf-statut').value;
@@ -683,7 +687,11 @@ async function saveJalon() {
       showToast('Jalon enregistré localement', 'info');
     }
     renderTimeline();
-    closeJalonModal();
+    if (andNew) {
+      openJalonModal(null);
+    } else {
+      closeJalonModal();
+    }
   } catch (err) {
     errEl.textContent = 'Erreur : ' + err.message;
     errEl.classList.add('show');
