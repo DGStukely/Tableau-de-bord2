@@ -894,6 +894,8 @@ async function saveJalon(andNew = false) {
   } catch (err) {
     errEl.textContent = 'Erreur : ' + err.message;
     errEl.classList.add('show');
+  } finally {
+    // Toujours réactiver les boutons et masquer le spinner (succès OU erreur)
     document.getElementById('jalon-form-saving').classList.remove('show');
     document.querySelectorAll('#jalon-modal-bg .form-btn-save, #jalon-modal-bg .form-btn-cancel, #jalon-modal-bg .form-btn-delete').forEach(b => b.disabled = false);
   }
