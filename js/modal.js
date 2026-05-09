@@ -28,15 +28,16 @@ function openModal(id) {
     }
     const rows = _jp.jalons.sort((x,y) => (x.date||'').localeCompare(y.date||'')).map(j => {
       const jsm = STATUS_MAP[j.statut] || STATUS_MAP['à faire'];
-      return `<div style="padding:5px 0;border-bottom:1px solid var(--c-border-light);">
+      const done = j.statut === 'terminée';
+      return `<div style="padding:6px 0;border-bottom:1px solid var(--c-border-light);">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="width:8px;height:8px;border-radius:50%;background:${jsm.dot};flex-shrink:0;"></span>
-          <span style="flex:1;font-size:12.5px;font-weight:500;">${h(j.titre)}</span>
+          <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleJalon('${h(String(j.id))}', this.checked)"
+            style="width:15px;height:15px;cursor:pointer;accent-color:#3B6D11;flex-shrink:0;" title="${done ? 'Marquer non terminé' : 'Marquer terminé'}">
+          <span style="flex:1;font-size:12.5px;font-weight:500;${done ? 'text-decoration:line-through;color:var(--c-text-3);' : ''}">${h(j.titre)}</span>
           <span style="font-size:11px;color:var(--c-text-3);white-space:nowrap;">${fmtDate(j.date)}</span>
-          <span class="pill ${jsm.pill}" style="font-size:10px;">${h(j.statut)}</span>
           <button onclick="closeModal();openJalonModal('${h(String(j.id))}')" style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:1px 3px;" title="Modifier">✏️</button>
         </div>
-        ${j.desc ? `<div style="font-size:11.5px;color:var(--c-text-2);margin:3px 0 0 16px;line-height:1.4;">${h(j.desc)}</div>` : ''}
+        ${j.desc ? `<div style="font-size:11.5px;color:var(--c-text-2);margin:3px 0 0 23px;line-height:1.4;">${h(j.desc)}</div>` : ''}
       </div>`;
     }).join('');
     return `<div style="margin:12px 0 4px;">
@@ -758,6 +759,42 @@ async function saveJalon(andNew = false) {
     errEl.classList.add('show');
     document.getElementById('jalon-form-saving').classList.remove('show');
     document.querySelectorAll('#jalon-modal-bg .form-btn-save, #jalon-modal-bg .form-btn-cancel, #jalon-modal-bg .form-btn-delete').forEach(b => b.disabled = false);
+  }
+}
+
+/**
+ * Coche/décoche un jalon directement sans ouvrir le formulaire.
+ * Terminée ↔ en cours. Met à jour SP et rafraîchit l'affichage.
+ */
+async function toggleJalon(jalonId, checked) {
+  const j = APP.jalons.find(x => String(x.id) === String(jalonId));
+  if (!j) return;
+
+  const nouveauStatut = checked ? 'terminée' : 'en cours';
+  j.statut = nouveauStatut;
+
+  // Sauvegarder dans SharePoint
+  if (isLiveData && graphToken && spSiteId && !String(jalonId).startsWith('local-')) {
+    try {
+      await graphFetch(
+        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonId}/fields`,
+        'PATCH', { Statut: nouveauStatut }
+      );
+    } catch(e) {
+      showToast('Erreur sauvegarde jalon : ' + e.message, 'error');
+      j.statut = checked ? 'en cours' : 'terminée'; // annuler
+    }
+  }
+
+  // Rafraîchir la timeline et le détail si ouvert
+  renderTimeline();
+  renderActions();
+  // Si le panneau de détail de l'objectif parent est ouvert, le rafraîchir
+  if (j.actionId) {
+    const modalBg = document.getElementById('modal-bg');
+    if (modalBg && modalBg.classList.contains('open')) {
+      openModal(j.actionId);
+    }
   }
 }
 

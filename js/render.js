@@ -385,7 +385,13 @@ function renderTimeline() {
         </div>
         <div class="tl-body">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
-            <div class="tl-title">${h(item.titre)}</div>
+            <div style="display:flex;align-items:center;gap:7px;flex:1;min-width:0;">
+              <input type="checkbox" ${item.statut === 'terminée' ? 'checked' : ''}
+                onchange="toggleJalon('${h(String(item.id))}', this.checked)"
+                style="width:15px;height:15px;cursor:pointer;accent-color:#3B6D11;flex-shrink:0;"
+                title="${item.statut === 'terminée' ? 'Marquer non terminé' : 'Marquer terminé'}">
+              <div class="tl-title" style="${item.statut === 'terminée' ? 'text-decoration:line-through;color:var(--c-text-3);' : ''}">${h(item.titre)}</div>
+            </div>
             <div style="display:flex;gap:2px;flex-shrink:0;">
               <button onclick="openJalonModal('${h(String(item.id))}')" title="Modifier"
                 style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:2px 4px;border-radius:4px;line-height:1;"
