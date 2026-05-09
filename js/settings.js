@@ -43,7 +43,8 @@ function persistSettings() {
       statuts:      APP.statuts,
       priorites:    APP.priorites,
       autoCalcAxes: APP.autoCalcAxes,
-      theme:        APP.theme || 'grey'
+      theme:        APP.theme || 'grey',
+      savedAt:      new Date().toISOString()
     }));
     // Sauvegarder les axes séparément
     const existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');

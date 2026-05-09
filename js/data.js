@@ -16,12 +16,31 @@ async function loadSpConfig() {
       const valeur = items[0].fields?.Valeur;
       if (valeur) {
         try {
-          const cfg = JSON.parse(valeur);
+          const cfgSp = JSON.parse(valeur);
+
+          // Comparer avec le localStorage : garder la version la plus récente
+          let cfgLocal = null;
+          try { cfgLocal = JSON.parse(localStorage.getItem('plan_strategique_config') || 'null'); } catch(_) {}
+
+          const dateSp    = cfgSp.savedAt    ? new Date(cfgSp.savedAt).getTime()    : 0;
+          const dateLocal = cfgLocal?.savedAt ? new Date(cfgLocal.savedAt).getTime() : 0;
+
+          let cfg;
+          if (dateLocal > dateSp) {
+            // localStorage plus récent → garder le local et remettre à jour SharePoint
+            cfg = cfgLocal;
+            console.info('loadSpConfig: localStorage plus récent que SP, push vers SP...');
+            setTimeout(() => persistSpConfig(), 500);
+          } else {
+            // SharePoint à jour (ou égal) → utiliser SP
+            cfg = cfgSp;
+          }
+
           if (cfg.responsables && cfg.responsables.length) APP.responsables = cfg.responsables;
           if (cfg.statuts      && cfg.statuts.length)      APP.statuts      = cfg.statuts;
           if (cfg.priorites    && cfg.priorites.length)    APP.priorites    = cfg.priorites;
           if (cfg.autoCalcAxes !== undefined)              APP.autoCalcAxes = cfg.autoCalcAxes;
-          // Synchroniser aussi vers localStorage
+          // Synchroniser vers localStorage
           localStorage.setItem('plan_strategique_config', JSON.stringify(cfg));
         } catch(e) { console.warn('Config SP parse error', e); }
       }
