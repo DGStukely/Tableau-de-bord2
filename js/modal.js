@@ -630,6 +630,36 @@ async function deleteAction(skipConfirm = false) {
    ================================================================ */
 let jalonEditId = null;
 
+// Cache des noms internes des colonnes de la liste Jalons
+let _jalonColMap = null;
+
+async function getJalonColMap() {
+  if (_jalonColMap) return _jalonColMap;
+  try {
+    const cols = await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/columns`);
+    _jalonColMap = {};
+    (cols.value || []).forEach(c => {
+      if (c.readOnly || c.hidden || (c.name || '').startsWith('_')) return;
+      const dn = (c.displayName || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+      _jalonColMap[dn] = c.name;
+    });
+    console.log('🗂 Colonnes Jalons:', _jalonColMap);
+  } catch(e) {
+    console.warn('getJalonColMap error:', e.message);
+    _jalonColMap = {};
+  }
+  return _jalonColMap;
+}
+
+/** Résout le nom interne d'un champ Jalon par son nom d'affichage (insensible à la casse/accents) */
+function jalonField(colMap, ...candidates) {
+  for (const c of candidates) {
+    const key = c.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    if (colMap[key]) return colMap[key];
+  }
+  return candidates[0]; // fallback
+}
+
 function openJalonModal(id = null, preselectedActionId = null) {
   jalonEditId = id;
   const modal = document.getElementById('jalon-modal-bg');
@@ -724,12 +754,19 @@ async function saveJalon(andNew = false) {
 
   try {
     if (isLiveData && graphToken && spSiteId) {
+      // Découvrir les vrais noms de colonnes
+      const colMap  = await getJalonColMap();
+      const colDate  = jalonField(colMap, 'Date', 'DateJalon', 'date');
+      const colStat  = jalonField(colMap, 'Statut', 'statut', 'Status');
+      const colActId = jalonField(colMap, 'ActionId', 'actionid');
+      const colDesc  = jalonField(colMap, 'Description', 'description');
+
       // Champs à patcher (sans Title ni valeurs nulles)
       const patchFields = {};
-      if (date)     patchFields.Date        = date + 'T00:00:00Z';
-      if (statut)   patchFields.Statut      = statut;
-      if (actionId) patchFields.ActionId    = actionId;
-      if (desc)     patchFields.Description = desc;
+      if (date)     patchFields[colDate]  = date + 'T00:00:00Z';
+      if (statut)   patchFields[colStat]  = statut;
+      if (actionId) patchFields[colActId] = actionId;
+      if (desc)     patchFields[colDesc]  = desc;
 
       if (jalonEditId && !String(jalonEditId).startsWith('local-')) {
         // Édition : PATCH tous les champs dont Title
@@ -797,9 +834,11 @@ async function toggleJalon(jalonId, checked) {
   // Sauvegarder dans SharePoint
   if (isLiveData && graphToken && spSiteId && !String(jalonId).startsWith('local-')) {
     try {
+      const colMap = await getJalonColMap();
+      const colStatut = jalonField(colMap, 'Statut', 'statut', 'Status');
       await graphFetch(
         `/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonId}/fields`,
-        'PATCH', { Statut: nouveauStatut }
+        'PATCH', { [colStatut]: nouveauStatut }
       );
     } catch(e) {
       showToast('Erreur sauvegarde jalon : ' + e.message, 'error');
