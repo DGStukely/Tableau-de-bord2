@@ -267,7 +267,9 @@ function renderActions(filter, page) {
     const ci  = a.statut !== 'terminée' ? calcCible(a) : null;
     return `
       <tr>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h(a.titre)}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          <span onclick="openModal('${h(String(a.id))}')" title="Voir les détails et les jalons" style="cursor:pointer;font-weight:500;color:var(--c-text);" onmouseover="this.style.color='var(--c-purple)'" onmouseout="this.style.color='var(--c-text)'">${h(a.titre)}</span>
+        </td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:99px;background:${h(axe.light)};color:${h(axe.color)};font-weight:500;">${h(a.axe)}</span></td>
         <td style="white-space:nowrap;">${h(a.resp)}</td>
         <td><span class="prio-badge" style="${getPrioBadgeStyle(a.prio)}"></span></td>
@@ -494,7 +496,7 @@ function renderMaVue() {
     const axe = axeMap[a.axe] || { color:'#888', light:'#eee' };
     const sm = STATUS_MAP[a.statut] || STATUS_MAP['à faire'];
     return `<tr>
-      <td style="font-weight:500;">${h(a.titre)}</td>
+      <td style="font-weight:500;"><span onclick="openModal('${h(String(a.id))}')" title="Voir les détails et les jalons" style="cursor:pointer;" onmouseover="this.style.color='var(--c-purple)'" onmouseout="this.style.color=''">${h(a.titre)}</span></td>
       <td><span style="font-size:11px;padding:2px 8px;border-radius:99px;background:${h(axe.light)};color:${h(axe.color)};font-weight:500;">${h(a.axe)}</span></td>
       <td style="white-space:nowrap;font-size:12px;">${fmtDate(a.echeance)} ${a.statut!=='terminée'?formatDelai(a.echeance):''}</td>
       <td><div class="mini-bar-wrap"><div class="mini-bar"><div class="mini-fill" style="width:${h(a.pct)}%;background:${h(sm.dot)}"></div></div><span class="mini-pct">${h(a.pct)}%</span></div></td>

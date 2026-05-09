@@ -155,7 +155,7 @@ function mapAction(fields) {
   };
 
   return {
-    id:          fields.ID              || fields.id,
+    id:          fields._spId          || fields.ID || fields.id,
     titre:       fields.Title           || fields.Titre || "",
     axe:         axeCode,
     resp:        fields.Responsable_Nom ||

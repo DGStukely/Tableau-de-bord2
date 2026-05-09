@@ -85,8 +85,9 @@ function openModal(id) {
         <div class="progress-fill" style="width:${_pct}%;background:${h(sm.dot)}"></div>
       </div>
     </div>
+    <!-- SECTION JALONS -->
     ${_jalonSection}
-    ${a.desc ? `<div class="field-row"><span class="field-label">Réalisation</span></div><div class="modal-desc">${h(a.desc)}</div>` : ''}
+    ${a.desc ? `<div style="margin-top:10px;"><div class="field-row"><span class="field-label">Réalisation</span></div><div class="modal-desc">${h(a.desc)}</div></div>` : ''}
     ${isLiveData ? `<a href="https://${SP_CONFIG.tenantDomain}${SP_CONFIG.siteRelativeUrl}/Lists/${SP_CONFIG.lists.actions}/DispForm.aspx?ID=${a.id}" target="_blank" class="btn" style="margin-top:14px;text-decoration:none;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       Ouvrir dans SharePoint
