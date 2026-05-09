@@ -11,45 +11,58 @@ function openModal(id) {
   const _modalEmail = (() => { const r = (APP.responsables||[]).find(x=>x.nom===a.resp); const e = safeEmail(r && r.courriel); return e ? `<br><a href="mailto:${e}" style="font-size:12px;color:var(--c-blue);">${h(e)}</a>` : ''; })();
 
   // Jalons associés à cet objectif
-  const _jp = getJalonProgress(a.id);
+  const _jp  = getJalonProgress(a.id);
   const _pct = _jp ? _jp.pct : a.pct;
-  const _ci = a.statut !== 'terminée' ? calcCible({ ...a, pct: _pct }) : null;
+  let _ci = null;
+  try { _ci = a.statut !== 'terminée' ? calcCible({ ...a, pct: _pct }) : null; } catch(_) {}
 
-  // Section jalons
-  const _jalonSection = (() => {
+  // Section jalons — toujours visible
+  let _jalonSection = '';
+  try {
+    const actionIdStr = h(String(a.id));
     if (!_jp) {
-      // Pas de jalons — bouton pour en ajouter
-      return `<div style="margin:12px 0 4px;">
-        <div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Jalons</div>
-        <button class="btn" onclick="closeModal();openJalonModal(null, '${a.id}')" style="font-size:12px;padding:4px 10px;">
-          + Ajouter un jalon
-        </button>
-      </div>`;
+      _jalonSection = `
+        <div style="margin:14px 0 4px;padding-top:10px;border-top:1px solid var(--c-border-light);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.05em;">Jalons</span>
+            <button class="btn" onclick="closeModal();openJalonModal(null,'${actionIdStr}')" style="font-size:11px;padding:2px 8px;">+ Ajouter</button>
+          </div>
+          <div style="font-size:12px;color:var(--c-text-3);font-style:italic;">Aucun jalon — ajoutez-en un pour calculer l'avancement automatiquement.</div>
+        </div>`;
+    } else {
+      const rows = _jp.jalons
+        .slice()
+        .sort((x, y) => (x.date || '').localeCompare(y.date || ''))
+        .map((j, idx) => {
+          const jsm  = STATUS_MAP[j.statut] || STATUS_MAP['à faire'];
+          const done = j.statut === 'terminée';
+          const jid  = h(String(j.id));
+          return `
+          <div style="padding:6px 0;border-bottom:1px solid var(--c-border-light);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleJalon('${jid}',this.checked)"
+                style="width:15px;height:15px;cursor:pointer;accent-color:#3B6D11;flex-shrink:0;">
+              <span style="font-size:10px;font-weight:700;color:var(--c-text-3);background:var(--c-surface-2);padding:1px 5px;border-radius:4px;flex-shrink:0;">J${idx + 1}</span>
+              <span style="flex:1;font-size:12.5px;font-weight:500;${done ? 'text-decoration:line-through;color:var(--c-text-3);' : ''}">${h(j.titre)}</span>
+              <span style="font-size:11px;color:var(--c-text-3);white-space:nowrap;">${fmtDate(j.date)}</span>
+              <button onclick="closeModal();openJalonModal('${jid}')" style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:1px 3px;" title="Modifier">✏️</button>
+            </div>
+            ${j.desc ? `<div style="font-size:11.5px;color:var(--c-text-2);margin:3px 0 0 23px;line-height:1.4;">${h(j.desc)}</div>` : ''}
+          </div>`;
+        }).join('');
+      _jalonSection = `
+        <div style="margin:14px 0 4px;padding-top:10px;border-top:1px solid var(--c-border-light);">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.05em;">Jalons — ${_jp.done}/${_jp.total} terminés</span>
+            <button class="btn" onclick="closeModal();openJalonModal(null,'${actionIdStr}')" style="font-size:11px;padding:2px 8px;">+ Ajouter</button>
+          </div>
+          ${rows}
+        </div>`;
     }
-    const rows = _jp.jalons.sort((x,y) => (x.date||'').localeCompare(y.date||'')).map((j, idx) => {
-      const jsm  = STATUS_MAP[j.statut] || STATUS_MAP['à faire'];
-      const done = j.statut === 'terminée';
-      const num  = `J${idx + 1}`;
-      return `<div style="padding:6px 0;border-bottom:1px solid var(--c-border-light);">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleJalon('${h(String(j.id))}', this.checked)"
-            style="width:15px;height:15px;cursor:pointer;accent-color:#3B6D11;flex-shrink:0;" title="${done ? 'Marquer non terminé' : 'Marquer terminé'}">
-          <span style="font-size:10px;font-weight:700;color:var(--c-text-3);background:var(--c-surface-2);padding:1px 5px;border-radius:4px;flex-shrink:0;">${num}</span>
-          <span style="flex:1;font-size:12.5px;font-weight:500;${done ? 'text-decoration:line-through;color:var(--c-text-3);' : ''}">${h(j.titre)}</span>
-          <span style="font-size:11px;color:var(--c-text-3);white-space:nowrap;">${fmtDate(j.date)}</span>
-          <button onclick="closeModal();openJalonModal('${h(String(j.id))}')" style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:1px 3px;" title="Modifier">✏️</button>
-        </div>
-        ${j.desc ? `<div style="font-size:11.5px;color:var(--c-text-2);margin:3px 0 0 23px;line-height:1.4;">${h(j.desc)}</div>` : ''}
-      </div>`;
-    }).join('');
-    return `<div style="margin:12px 0 4px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.05em;">Jalons — ${_jp.done}/${_jp.total} terminés</div>
-        <button class="btn" onclick="closeModal();openJalonModal(null, '${a.id}')" style="font-size:11px;padding:2px 8px;">+ Ajouter</button>
-      </div>
-      ${rows}
-    </div>`;
-  })();
+  } catch(e) {
+    console.error('_jalonSection error:', e);
+    _jalonSection = '';
+  }
 
   document.getElementById('modal-box').innerHTML = `
     <div class="modal-head">
