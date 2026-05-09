@@ -26,13 +26,15 @@ function openModal(id) {
         </button>
       </div>`;
     }
-    const rows = _jp.jalons.sort((x,y) => (x.date||'').localeCompare(y.date||'')).map(j => {
-      const jsm = STATUS_MAP[j.statut] || STATUS_MAP['à faire'];
+    const rows = _jp.jalons.sort((x,y) => (x.date||'').localeCompare(y.date||'')).map((j, idx) => {
+      const jsm  = STATUS_MAP[j.statut] || STATUS_MAP['à faire'];
       const done = j.statut === 'terminée';
+      const num  = `J${idx + 1}`;
       return `<div style="padding:6px 0;border-bottom:1px solid var(--c-border-light);">
         <div style="display:flex;align-items:center;gap:8px;">
           <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleJalon('${h(String(j.id))}', this.checked)"
             style="width:15px;height:15px;cursor:pointer;accent-color:#3B6D11;flex-shrink:0;" title="${done ? 'Marquer non terminé' : 'Marquer terminé'}">
+          <span style="font-size:10px;font-weight:700;color:var(--c-text-3);background:var(--c-surface-2);padding:1px 5px;border-radius:4px;flex-shrink:0;">${num}</span>
           <span style="flex:1;font-size:12.5px;font-weight:500;${done ? 'text-decoration:line-through;color:var(--c-text-3);' : ''}">${h(j.titre)}</span>
           <span style="font-size:11px;color:var(--c-text-3);white-space:nowrap;">${fmtDate(j.date)}</span>
           <button onclick="closeModal();openJalonModal('${h(String(j.id))}')" style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:1px 3px;" title="Modifier">✏️</button>

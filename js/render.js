@@ -371,10 +371,24 @@ function renderTimeline() {
     listEl.innerHTML = `<div style="text-align:center;color:var(--c-text-3);padding:2rem;font-size:.9rem;">Aucun jalon — cliquez <strong>+ Nouveau jalon</strong> pour en créer un.</div>`;
     return;
   }
+  // Précalculer le numéro de chaque jalon au sein de son objectif (triés par date)
+  const jalonNumMap = {};
+  const byAction = {};
+  APP.jalons.forEach(j => {
+    const key = j.actionId || '__none__';
+    if (!byAction[key]) byAction[key] = [];
+    byAction[key].push(j);
+  });
+  Object.values(byAction).forEach(list => {
+    list.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    list.forEach((j, idx) => { jalonNumMap[String(j.id)] = idx + 1; });
+  });
+
   const axeMap = getAxeMap();
   listEl.innerHTML = sorted.map((item, i) => {
     const action  = APP.actions.find(a => String(a.id) === String(item.actionId));
     const axe     = action ? (axeMap[action.axe] || {}) : {};
+    const num     = action && jalonNumMap[String(item.id)] ? `J${jalonNumMap[String(item.id)]}` : null;
     const sm      = STATUS_MAP[item.statut] || STATUS_MAP['à faire'];
     const isLast  = i === sorted.length - 1;
     return `
@@ -390,6 +404,7 @@ function renderTimeline() {
                 onchange="toggleJalon('${h(String(item.id))}', this.checked)"
                 style="width:15px;height:15px;cursor:pointer;accent-color:#3B6D11;flex-shrink:0;"
                 title="${item.statut === 'terminée' ? 'Marquer non terminé' : 'Marquer terminé'}">
+              ${num ? `<span style="font-size:10px;font-weight:700;color:var(--c-text-3);background:var(--c-surface-2);padding:1px 5px;border-radius:4px;flex-shrink:0;">${num}</span>` : ''}
               <div class="tl-title" style="${item.statut === 'terminée' ? 'text-decoration:line-through;color:var(--c-text-3);' : ''}">${h(item.titre)}</div>
             </div>
             <div style="display:flex;gap:2px;flex-shrink:0;">
