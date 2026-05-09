@@ -71,7 +71,14 @@ async function persistSpConfig() {
       );
       _spConfigItemId = res.id;
     }
-  } catch(e) { console.warn('persistSpConfig error:', e.message); }
+    return true; // succès
+  } catch(e) {
+    console.error('persistSpConfig error:', e.message);
+    if (typeof showToast === 'function') {
+      showToast('⚠️ Paramètres non sauvegardés sur SharePoint : ' + e.message, 'error');
+    }
+    return false;
+  }
 }
 
 /* ================================================================

@@ -470,29 +470,59 @@ function removePrio(i) {
 }
 
 /* --- SAUVEGARDE --- */
-function saveSettings(closeAfter) {
+async function saveSettings(closeAfter) {
+  // 1. Sauvegarder en mémoire + localStorage
+  //    Annuler le timer debounce avant ET après persistSettings (qui le recrée)
+  clearTimeout(window._spConfigTimer);
   persistSettings();
+  clearTimeout(window._spConfigTimer); // annuler le re-schedule créé par persistSettings
   calcAvancementAxes();
   renderApercu();
   renderActions();
   renderAxes();
 
   if (closeAfter) {
-    // Bouton Terminer — sauvegarder et fermer
+    // Bouton Terminer — fermer d'abord, puis sync SharePoint en arrière-plan
     closeSettingsModal();
+    if (isLiveData && graphToken && spSiteId) {
+      const ok = await persistSpConfig();
+      if (ok) showToast('Paramètres sauvegardés sur SharePoint', 'success');
+      // L'erreur est déjà affichée par persistSpConfig si ok === false
+    }
   } else {
     // Bouton Sauvegarder — rester dans les paramètres avec confirmation
     const btn = document.querySelector('.settings-modal .btn-add');
     if (btn) {
+      btn.disabled = true;
       const orig = btn.innerHTML;
-      btn.innerHTML = '✓ Sauvegardé !';
-      btn.style.background = '#3B6D11';
-      btn.style.borderColor = '#3B6D11';
-      setTimeout(() => {
-        btn.innerHTML = orig;
-        btn.style.background = '';
-        btn.style.borderColor = '';
-      }, 2000);
+      btn.innerHTML = '⏳ Sauvegarde…';
+    }
+    if (isLiveData && graphToken && spSiteId) {
+      const ok = await persistSpConfig();
+      const btn2 = document.querySelector('.settings-modal .btn-add');
+      if (btn2) {
+        btn2.disabled = false;
+        btn2.innerHTML = ok ? '✓ Sauvegardé !' : '⚠️ Erreur SP';
+        btn2.style.background = ok ? '#3B6D11' : '#A32D2D';
+        btn2.style.borderColor = btn2.style.background;
+        setTimeout(() => {
+          btn2.innerHTML = '💾 Sauvegarder';
+          btn2.style.background = '';
+          btn2.style.borderColor = '';
+        }, 2500);
+      }
+    } else {
+      const btn2 = document.querySelector('.settings-modal .btn-add');
+      if (btn2) {
+        btn2.innerHTML = '✓ Sauvegardé !';
+        btn2.style.background = '#3B6D11';
+        btn2.style.borderColor = '#3B6D11';
+        setTimeout(() => {
+          btn2.innerHTML = '💾 Sauvegarder';
+          btn2.style.background = '';
+          btn2.style.borderColor = '';
+        }, 2000);
+      }
     }
   }
 }
