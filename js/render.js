@@ -270,7 +270,7 @@ function renderActions(filter, page) {
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h(a.titre)}</td>
         <td><span style="font-size:11px;padding:2px 8px;border-radius:99px;background:${h(axe.light)};color:${h(axe.color)};font-weight:500;">${h(a.axe)}</span></td>
         <td style="white-space:nowrap;">${h(a.resp)}</td>
-        <td><span class="prio-badge ${PRIO_MAP[a.prio]||'pr-m'}"></span></td>
+        <td><span class="prio-badge" style="${getPrioBadgeStyle(a.prio)}"></span></td>
         <td style="white-space:nowrap;font-size:12px;">${fmtDate(a.echeance)} ${a.statut !== 'terminée' ? formatDelai(a.echeance) : ''}</td>
         <td>
           <div class="mini-bar-wrap">

@@ -49,6 +49,18 @@ const STATUS_MAP = {
 };
 const PRIO_MAP = { haute:'pr-h', moyenne:'pr-m', basse:'pr-l' };
 
+/** Retourne le style inline pour un badge de priorité.
+ *  Cherche d'abord dans APP.priorites (couleur personnalisée),
+ *  puis dans PRIO_MAP pour les 3 priorités par défaut. */
+function getPrioBadgeStyle(prioId) {
+  if (!prioId) return '';
+  const p = (APP.priorites || []).find(x => x.id === prioId);
+  if (p && p.couleur) return `background:${p.couleur};`;
+  // Fallback : couleurs par défaut codées en dur
+  const defaults = { haute:'#E24B4A', moyenne:'#EF9F27', basse:'#639922' };
+  return defaults[prioId] ? `background:${defaults[prioId]};` : 'background:#EF9F27;';
+}
+
 /* ================================================================
    PERSISTANCE DES DONNÉES (mode hors ligne)
    ================================================================ */

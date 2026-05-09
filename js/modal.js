@@ -17,7 +17,7 @@ function openModal(id) {
     </div>
     <div class="field-row"><span class="field-label">Axe</span><span class="field-value" style="color:${h(axe.color)};font-weight:500;">${h(axe.nom)}</span></div>
     <div class="field-row"><span class="field-label">Responsable</span><span class="field-value">${h(a.resp)}${_modalEmail}</span></div>
-    <div class="field-row"><span class="field-label">Priorité</span><span class="field-value"><span class="prio-badge ${PRIO_MAP[a.prio]||'pr-m'}" style="display:inline-block;margin-right:5px;"></span>${h(a.prio)}</span></div>
+    <div class="field-row"><span class="field-label">Priorité</span><span class="field-value"><span class="prio-badge" style="display:inline-block;margin-right:5px;${getPrioBadgeStyle(a.prio)}"></span>${h(a.prio)}</span></div>
     <div class="field-row"><span class="field-label">Échéance</span><span class="field-value">${fmtDate(a.echeance)}</span></div>
     ${a.dateDebut ? `<div class="field-row"><span class="field-label">Date de début</span><span class="field-value">${fmtDate(a.dateDebut)}</span></div>` : ''}
     <div class="field-row"><span class="field-label">Statut</span><span class="field-value"><span class="pill ${sm.pill}">${h(a.statut)}</span></span></div>
