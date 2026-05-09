@@ -339,9 +339,10 @@
         <span id="form-modal-title">Nouvel objectif</span>
         <button class="form-close" onclick="closeFormModal()">×</button>
       </div>
-      <!-- Onglets Détails / Historique -->
+      <!-- Onglets Détails / Jalons / Historique -->
       <div id="form-tabs" style="display:flex;gap:0;border-bottom:1px solid var(--c-border);margin-bottom:1rem;">
         <button class="form-tab active" onclick="switchFormTab('details',this)" style="padding:6px 16px;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:13px;color:var(--c-purple);border-bottom:2px solid var(--c-purple);font-weight:500;">Détails</button>
+        <button class="form-tab" id="tab-jalons-btn" onclick="switchFormTab('jalons',this)" style="padding:6px 16px;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:13px;color:var(--c-text-2);border-bottom:2px solid transparent;display:none;">Jalons</button>
         <button class="form-tab" id="tab-historique-btn" onclick="switchFormTab('historique',this)" style="padding:6px 16px;border:none;background:none;cursor:pointer;font-family:var(--font);font-size:13px;color:var(--c-text-2);border-bottom:2px solid transparent;">Historique</button>
       </div>
       <!-- Panneau Détails -->
@@ -404,6 +405,15 @@
         </div>
       </div>
       </div><!-- fin form-pane-details -->
+
+      <!-- Panneau Jalons -->
+      <div id="form-pane-jalons" style="display:none;min-height:200px;max-height:420px;overflow-y:auto;">
+        <div id="form-jalons-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span id="form-jalons-count" style="font-size:12px;color:var(--c-text-3);"></span>
+          <button class="btn btn-add" id="form-jalons-add-btn" onclick="" style="font-size:11px;padding:3px 10px;">+ Ajouter un jalon</button>
+        </div>
+        <div id="form-jalons-content"></div>
+      </div>
 
       <!-- Panneau Historique -->
       <div id="form-pane-historique" style="display:none;min-height:200px;max-height:420px;overflow-y:auto;">

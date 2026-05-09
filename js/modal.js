@@ -205,6 +205,14 @@ function openFormModal(actionId) {
     _originalAction = { ...a };
     const tabHist = document.getElementById('tab-historique-btn');
     if (tabHist) tabHist.style.display = '';
+    // Afficher l'onglet Jalons en mode édition
+    const tabJalons = document.getElementById('tab-jalons-btn');
+    if (tabJalons) {
+      tabJalons.style.display = '';
+      // Configurer le bouton Ajouter avec l'ID de cet objectif
+      const addBtn = document.getElementById('form-jalons-add-btn');
+      if (addBtn) addBtn.onclick = () => { closeFormModal(); openJalonModal(null, String(actionId)); };
+    }
 
     document.getElementById('f-titre').value       = a.titre || '';
     document.getElementById('f-axe').value         = a.axe || '';
@@ -228,6 +236,9 @@ function openFormModal(actionId) {
     _originalAction = null;
     const tabHistNew = document.getElementById('tab-historique-btn');
     if (tabHistNew) tabHistNew.style.display = 'none';
+    // Masquer l'onglet Jalons en mode création
+    const tabJalonsNew = document.getElementById('tab-jalons-btn');
+    if (tabJalonsNew) tabJalonsNew.style.display = 'none';
     document.getElementById('f-titre').value       = '';
     document.getElementById('f-axe').value         = '';
     document.getElementById('f-responsable').value = '';
@@ -266,10 +277,14 @@ function closeFormModal() {
   formEditId      = null;
   _originalAction = null;
   switchFormTab('details', document.querySelector('.form-tab'));
+  // Réinitialiser le contenu de l'onglet Jalons
+  const jc = document.getElementById('form-jalons-content');
+  if (jc) jc.innerHTML = '';
 }
 
 function switchFormTab(tab, btn) {
   document.getElementById('form-pane-details').style.display    = tab === 'details'    ? '' : 'none';
+  document.getElementById('form-pane-jalons').style.display     = tab === 'jalons'     ? '' : 'none';
   document.getElementById('form-pane-historique').style.display = tab === 'historique' ? '' : 'none';
   document.querySelectorAll('.form-tab').forEach(b => {
     b.style.color       = 'var(--c-text-2)';
@@ -281,9 +296,14 @@ function switchFormTab(tab, btn) {
     btn.style.borderBottom = '2px solid var(--c-purple)';
     btn.style.fontWeight  = '500';
   }
-  // Masquer les boutons Enregistrer/Supprimer dans l'onglet Historique
+  // Masquer les boutons Enregistrer/Supprimer dans les onglets Historique et Jalons
   const actions = document.querySelector('.form-actions');
-  if (actions) actions.style.display = tab === 'historique' ? 'none' : 'flex';
+  if (actions) actions.style.display = (tab === 'historique' || tab === 'jalons') ? 'none' : 'flex';
+
+  // Charger les jalons au premier affichage de l'onglet
+  if (tab === 'jalons' && formEditId) {
+    loadFormJalons(formEditId);
+  }
 }
 
 /** Ajuste automatiquement le statut selon la date d'échéance et l'avancement */
@@ -607,6 +627,51 @@ async function loadHistorique(actionId) {
   } catch(e) {
     el.innerHTML = `<div style="color:var(--c-danger);font-size:12px;">Erreur : ${h(e.message)}</div>`;
   }
+}
+
+/** Affiche les jalons de l'objectif dans l'onglet Jalons du formulaire */
+function loadFormJalons(actionId) {
+  const el    = document.getElementById('form-jalons-content');
+  const cntEl = document.getElementById('form-jalons-count');
+  if (!el) return;
+
+  const jalons = (APP.jalons || [])
+    .filter(j => String(j.actionId) === String(actionId))
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+  const total = jalons.length;
+  const done  = jalons.filter(j => j.statut === 'terminée').length;
+
+  if (cntEl) {
+    cntEl.textContent = total > 0
+      ? `${done} / ${total} jalon${total > 1 ? 's' : ''} terminé${done > 1 ? 's' : ''} — avancement calculé automatiquement`
+      : '';
+  }
+
+  if (total === 0) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--c-text-3);font-style:italic;padding:8px 0;">Aucun jalon — ajoutez-en un pour calculer l'avancement automatiquement.</div>`;
+    return;
+  }
+
+  el.innerHTML = jalons.map((j, idx) => {
+    const isDone = j.statut === 'terminée';
+    const jid    = h(String(j.id));
+    const aid    = h(String(actionId));
+    return `
+      <div style="padding:7px 0;border-bottom:1px solid var(--c-border-light);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" ${isDone ? 'checked' : ''}
+            onchange="toggleJalon('${jid}',this.checked);setTimeout(()=>loadFormJalons('${aid}'),900)"
+            style="width:15px;height:15px;cursor:pointer;accent-color:#3B6D11;flex-shrink:0;">
+          <span style="font-size:10px;font-weight:700;color:var(--c-text-3);background:var(--c-surface-2);padding:1px 5px;border-radius:4px;flex-shrink:0;">J${idx + 1}</span>
+          <span style="flex:1;font-size:12.5px;font-weight:500;${isDone ? 'text-decoration:line-through;color:var(--c-text-3);' : ''}">${h(j.titre)}</span>
+          <span style="font-size:11px;color:var(--c-text-3);white-space:nowrap;">${fmtDate(j.date)}</span>
+          <button onclick="closeFormModal();openJalonModal('${jid}')"
+            style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:1px 3px;" title="Modifier">✏️</button>
+        </div>
+        ${j.desc ? `<div style="font-size:11.5px;color:var(--c-text-2);margin:3px 0 0 23px;line-height:1.4;">${h(j.desc)}</div>` : ''}
+      </div>`;
+  }).join('');
 }
 
 async function deleteAction(skipConfirm = false) {
