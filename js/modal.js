@@ -722,20 +722,39 @@ async function saveJalon(andNew = false) {
 
   try {
     if (isLiveData && graphToken && spSiteId) {
-      const spFields = {
-        Title:       titre,
-        Date:        date + 'T00:00:00Z',
-        Statut:      statut,
-        ActionId:    actionId    || null,
-        Description: desc        || null
-      };
+      // Champs à patcher (sans Title ni valeurs nulles)
+      const patchFields = {};
+      if (date)     patchFields.Date        = date + 'T00:00:00Z';
+      if (statut)   patchFields.Statut      = statut;
+      if (actionId) patchFields.ActionId    = actionId;
+      if (desc)     patchFields.Description = desc;
+
       if (jalonEditId && !String(jalonEditId).startsWith('local-')) {
-        await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonEditId}/fields`, 'PATCH', spFields);
+        // Édition : PATCH tous les champs dont Title
+        await graphFetch(
+          `/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonEditId}/fields`,
+          'PATCH', { Title: titre, ...patchFields }
+        );
         const idx = APP.jalons.findIndex(x => String(x.id) === String(jalonEditId));
         if (idx !== -1) APP.jalons[idx] = { ...APP.jalons[idx], ...newJalon };
       } else {
-        const res = await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items`, 'POST', { fields: spFields });
-        newJalon.id = res.id || res.fields?.id || newJalon.id;
+        // Création : POST Title seulement, puis PATCH le reste
+        const res = await graphFetch(
+          `/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items`,
+          'POST', { fields: { Title: titre } }
+        );
+        const newId = res.id;
+        newJalon.id = newId;
+        if (Object.keys(patchFields).length > 0) {
+          try {
+            await graphFetch(
+              `/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${newId}/fields`,
+              'PATCH', patchFields
+            );
+          } catch(patchErr) {
+            console.error('PATCH jalon champs:', patchErr.message);
+          }
+        }
         APP.jalons.push(newJalon);
       }
       showToast('Jalon enregistré dans SharePoint', 'success');
