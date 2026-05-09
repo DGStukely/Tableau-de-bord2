@@ -180,7 +180,8 @@ function mapJalon(fields) {
     id:       fields._spId           || fields.id || '',
     date:     fields.Date            || fields.DateJalon,
     titre:    fields.Title           || fields.Titre,
-    actionId: fields.ActionId        || "",   // lien vers l'objectif (SP item ID)
+    desc:     fields.Description     || fields.Description0 || "",
+    actionId: fields.ActionId        || "",
     statut:   (fields.Statut         || "à faire").toLowerCase(),
   };
 }

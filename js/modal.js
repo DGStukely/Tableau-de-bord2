@@ -28,12 +28,15 @@ function openModal(id) {
     }
     const rows = _jp.jalons.sort((x,y) => (x.date||'').localeCompare(y.date||'')).map(j => {
       const jsm = STATUS_MAP[j.statut] || STATUS_MAP['à faire'];
-      return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--c-border-light);">
-        <span style="width:8px;height:8px;border-radius:50%;background:${jsm.dot};flex-shrink:0;"></span>
-        <span style="flex:1;font-size:12.5px;">${h(j.titre)}</span>
-        <span style="font-size:11px;color:var(--c-text-3);white-space:nowrap;">${fmtDate(j.date)}</span>
-        <span class="pill ${jsm.pill}" style="font-size:10px;">${h(j.statut)}</span>
-        <button onclick="closeModal();openJalonModal('${h(String(j.id))}')" style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:1px 3px;" title="Modifier">✏️</button>
+      return `<div style="padding:5px 0;border-bottom:1px solid var(--c-border-light);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${jsm.dot};flex-shrink:0;"></span>
+          <span style="flex:1;font-size:12.5px;font-weight:500;">${h(j.titre)}</span>
+          <span style="font-size:11px;color:var(--c-text-3);white-space:nowrap;">${fmtDate(j.date)}</span>
+          <span class="pill ${jsm.pill}" style="font-size:10px;">${h(j.statut)}</span>
+          <button onclick="closeModal();openJalonModal('${h(String(j.id))}')" style="border:none;background:none;cursor:pointer;color:var(--c-text-3);padding:1px 3px;" title="Modifier">✏️</button>
+        </div>
+        ${j.desc ? `<div style="font-size:11.5px;color:var(--c-text-2);margin:3px 0 0 16px;line-height:1.4;">${h(j.desc)}</div>` : ''}
       </div>`;
     }).join('');
     return `<div style="margin:12px 0 4px;">
@@ -671,6 +674,7 @@ function openJalonModal(id = null, preselectedActionId = null) {
     document.getElementById('jf-date').value      = j.date     || '';
     document.getElementById('jf-statut').value    = j.statut   || 'à faire';
     document.getElementById('jf-objectif').value  = j.actionId || '';
+    document.getElementById('jf-desc').value      = j.desc     || '';
   } else {
     // Mode création — pré-sélectionner l'objectif si passé en paramètre
     titleEl.textContent = 'Nouveau jalon';
@@ -679,6 +683,7 @@ function openJalonModal(id = null, preselectedActionId = null) {
     document.getElementById('jf-date').value      = '';
     document.getElementById('jf-statut').value    = 'à faire';
     document.getElementById('jf-objectif').value  = preselectedActionId ? String(preselectedActionId) : '';
+    document.getElementById('jf-desc').value      = '';
   }
 
   modal.classList.add('open');
@@ -694,6 +699,7 @@ async function saveJalon(andNew = false) {
   const date     = document.getElementById('jf-date').value;
   const statut   = document.getElementById('jf-statut').value;
   const actionId = document.getElementById('jf-objectif').value;
+  const desc     = document.getElementById('jf-desc').value.trim();
 
   const errEl = document.getElementById('jalon-form-error');
   errEl.classList.remove('show');
@@ -709,16 +715,18 @@ async function saveJalon(andNew = false) {
     titre:    titre,
     date:     date,
     statut:   statut,
-    actionId: actionId
+    actionId: actionId,
+    desc:     desc
   };
 
   try {
     if (isLiveData && graphToken && spSiteId) {
       const spFields = {
-        Title:    titre,
-        Date:     date + 'T00:00:00Z',
-        Statut:   statut,
-        ActionId: actionId || null
+        Title:       titre,
+        Date:        date + 'T00:00:00Z',
+        Statut:      statut,
+        ActionId:    actionId    || null,
+        Description: desc        || null
       };
       if (jalonEditId && !String(jalonEditId).startsWith('local-')) {
         await graphFetch(`/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonEditId}/fields`, 'PATCH', spFields);

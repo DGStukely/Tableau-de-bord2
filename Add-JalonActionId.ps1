@@ -18,9 +18,17 @@ $existing = Get-PnPField -List $LISTE -Identity "ActionId" -ErrorAction Silently
 if ($existing) {
     Write-Host "La colonne ActionId existe déjà." -ForegroundColor Yellow
 } else {
-    Add-PnPField -List $LISTE -DisplayName "ActionId" -InternalName "ActionId" `
-        -Type Text -AddToDefaultView $false
+    Add-PnPField -List $LISTE -DisplayName "ActionId" -InternalName "ActionId" -Type Text
     Write-Host "Colonne ActionId ajoutée avec succès." -ForegroundColor Green
+}
+
+# Ajouter la colonne Description si absente
+$existingDesc = Get-PnPField -List $LISTE -Identity "Description" -ErrorAction SilentlyContinue
+if ($existingDesc) {
+    Write-Host "La colonne Description existe déjà." -ForegroundColor Yellow
+} else {
+    Add-PnPField -List $LISTE -DisplayName "Description" -InternalName "Description" -Type Note
+    Write-Host "Colonne Description ajoutée avec succès." -ForegroundColor Green
 }
 
 # Rendre la colonne Axe optionnelle (compatibilité ascendante)

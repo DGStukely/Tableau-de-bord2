@@ -404,6 +404,7 @@ function renderTimeline() {
             ${action ? `<span style="color:${h(axe.color||'#888')};cursor:pointer;" onclick="openModal('${h(String(action.id))}')" title="Voir l'objectif">${h(action.titre)}</span>` : ''}
             <span class="pill ${sm.pill}">${h(item.statut)}</span>
           </div>
+          ${item.desc ? `<div style="font-size:11.5px;color:var(--c-text-2);margin-top:3px;line-height:1.4;">${h(item.desc)}</div>` : ''}
         </div>
       </div>`;
   }).join('');
