@@ -18,30 +18,53 @@ async function loadSpConfig() {
         try {
           const cfgSp = JSON.parse(valeur);
 
-          // Comparer avec le localStorage : garder la version la plus récente
+          // Lire le localStorage
           let cfgLocal = null;
           try { cfgLocal = JSON.parse(localStorage.getItem('plan_strategique_config') || 'null'); } catch(_) {}
 
+          // Fusionner : garder le plus grand ensemble pour responsables et priorités
+          // (évite de perdre des données ajoutées localement quand SP est en retard)
+          const mergeById = (spArr, localArr) => {
+            if (!localArr || !localArr.length) return spArr || [];
+            if (!spArr    || !spArr.length)    return localArr;
+            // Union par id : SP en base, local complète
+            const map = {};
+            (spArr).forEach(x => { map[x.id] = x; });
+            (localArr).forEach(x => { if (!map[x.id]) map[x.id] = x; });
+            return Object.values(map);
+          };
+
+          // Pour statuts et autoCalcAxes : timestamp décide
           const dateSp    = cfgSp.savedAt    ? new Date(cfgSp.savedAt).getTime()    : 0;
           const dateLocal = cfgLocal?.savedAt ? new Date(cfgLocal.savedAt).getTime() : 0;
+          const spIsNewer = dateSp >= dateLocal;
 
-          let cfg;
-          if (dateLocal > dateSp) {
-            // localStorage plus récent → garder le local et remettre à jour SharePoint
-            cfg = cfgLocal;
-            console.info('loadSpConfig: localStorage plus récent que SP, push vers SP...');
-            setTimeout(() => persistSpConfig(), 500);
-          } else {
-            // SharePoint à jour (ou égal) → utiliser SP
-            cfg = cfgSp;
+          const merged = {
+            responsables: mergeById(cfgSp.responsables, cfgLocal?.responsables),
+            statuts:      spIsNewer ? (cfgSp.statuts || cfgLocal?.statuts || [])
+                                    : (cfgLocal?.statuts || cfgSp.statuts || []),
+            priorites:    mergeById(cfgSp.priorites, cfgLocal?.priorites),
+            autoCalcAxes: spIsNewer ? (cfgSp.autoCalcAxes ?? cfgLocal?.autoCalcAxes ?? false)
+                                    : (cfgLocal?.autoCalcAxes ?? cfgSp.autoCalcAxes ?? false),
+            theme:        cfgLocal?.theme || cfgSp.theme || 'grey'
+          };
+
+          if (merged.responsables.length) APP.responsables = merged.responsables;
+          if (merged.statuts.length)      APP.statuts      = merged.statuts;
+          if (merged.priorites.length)    APP.priorites    = merged.priorites;
+          APP.autoCalcAxes = merged.autoCalcAxes;
+          if (merged.theme) APP.theme = merged.theme;
+
+          // Si les données fusionnées sont plus complètes que SP → repousser vers SP
+          const spResp  = (cfgSp.responsables || []).length;
+          const spPrios = (cfgSp.priorites    || []).length;
+          if (merged.responsables.length > spResp || merged.priorites.length > spPrios) {
+            console.info('loadSpConfig: données locales plus complètes, push vers SP...');
+            setTimeout(() => persistSpConfig(), 800);
           }
 
-          if (cfg.responsables && cfg.responsables.length) APP.responsables = cfg.responsables;
-          if (cfg.statuts      && cfg.statuts.length)      APP.statuts      = cfg.statuts;
-          if (cfg.priorites    && cfg.priorites.length)    APP.priorites    = cfg.priorites;
-          if (cfg.autoCalcAxes !== undefined)              APP.autoCalcAxes = cfg.autoCalcAxes;
-          // Synchroniser vers localStorage
-          localStorage.setItem('plan_strategique_config', JSON.stringify(cfg));
+          // Mettre localStorage à jour
+          localStorage.setItem('plan_strategique_config', JSON.stringify({ ...merged, savedAt: new Date().toISOString() }));
         } catch(e) { console.warn('Config SP parse error', e); }
       }
     }
