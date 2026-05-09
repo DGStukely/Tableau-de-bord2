@@ -131,10 +131,12 @@ function openFormModal(actionId) {
     statutSelect.appendChild(opt);
   });
 
+  const btnSaveNew = document.getElementById('form-btn-save-new');
   if (actionId) {
     // Mode édition
     title.textContent = 'Modifier l\'objectif';
     btnDelete.style.display = 'inline-flex';
+    if (btnSaveNew) btnSaveNew.style.display = 'none';
     const a = APP.actions.find(x => String(x.id) === String(actionId));
     if (!a) {
       formEditId = null;
@@ -163,6 +165,7 @@ function openFormModal(actionId) {
     // Mode création
     title.textContent = 'Nouvel objectif';
     btnDelete.style.display = 'none';
+    if (btnSaveNew) btnSaveNew.style.display = '';
     _originalAction = null;
     const tabHistNew = document.getElementById('tab-historique-btn');
     if (tabHistNew) tabHistNew.style.display = 'none';
@@ -274,7 +277,7 @@ function showFormSuccess(msg) {
   }
 }
 
-async function saveAction() {
+async function saveAction(andNew = false) {
   // Validation
   const titre     = document.getElementById('f-titre').value.trim();
   const axe       = document.getElementById('f-axe').value;
@@ -417,8 +420,14 @@ async function saveAction() {
     renderAxes();
     renderMaVue();
 
-    // Fermer après délai
-    setTimeout(() => { closeFormModal(); }, 1500);
+    // Fermer ou réinitialiser pour un nouvel objectif
+    setTimeout(() => {
+      if (andNew) {
+        openFormModal(null); // Rouvrir vide pour un nouvel objectif
+      } else {
+        closeFormModal();
+      }
+    }, 800);
 
   } catch (err) {
     console.error('❌ saveAction erreur:', err);
