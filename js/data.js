@@ -7,10 +7,12 @@ let _spConfigItemId = null;  // ID SharePoint de l'item de config
 async function loadSpConfig() {
   if (!isLiveData || !graphToken || !spSiteId) return;
   try {
+    // Pas de $filter (Title non indexé) — on charge tous les items et on filtre côté client
     const res = await graphFetch(
-      `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items?expand=fields($select=Title,Valeur)&$filter=fields/Title eq 'dashboard_config'&$top=1`
+      `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items?expand=fields($select=Title,Valeur)&$top=50`,
+      'GET', null, { 'Prefer': 'HonorNonIndexedQueriesWarningMayFailRandomly' }
     );
-    const items = res.value || [];
+    const items = (res.value || []).filter(i => i.fields?.Title === 'dashboard_config');
     if (items.length > 0) {
       _spConfigItemId = items[0].id;
       const valeur = items[0].fields?.Valeur;
@@ -84,9 +86,10 @@ async function persistSpConfig() {
     // Si l'ID n'est pas connu, chercher l'item existant avant d'en créer un nouveau
     if (!_spConfigItemId) {
       const existing = await graphFetch(
-        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items?expand=fields($select=Title)&$filter=fields/Title eq 'dashboard_config'&$top=10`
+        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items?expand=fields($select=Title)&$top=50`,
+        'GET', null, { 'Prefer': 'HonorNonIndexedQueriesWarningMayFailRandomly' }
       );
-      const items = existing.value || [];
+      const items = (existing.value || []).filter(i => i.fields?.Title === 'dashboard_config');
       if (items.length > 0) {
         _spConfigItemId = items[0].id;
         // Supprimer les doublons éventuels (items 2, 3, …)
