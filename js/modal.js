@@ -927,13 +927,40 @@ async function toggleJalon(jalonId, checked) {
     }
   }
 
-  // Rafraîchir tous les panneaux affectés
-  calcAvancementAxes(); // recalcule axe.pct en tenant compte des jalons
+  // ── Propager l'avancement des jalons vers l'objectif et l'axe ──────────
+  if (j.actionId) {
+    const jp       = getJalonProgress(j.actionId);
+    const aIdx     = APP.actions.findIndex(x => String(x.id) === String(j.actionId));
+    if (jp !== null && aIdx !== -1) {
+      APP.actions[aIdx].pct = jp.pct;
+
+      // Synchroniser SharePoint (fire-and-forget, ne bloque pas l'UI)
+      if (isLiveData && graphToken && spSiteId && !String(j.actionId).startsWith('local-')) {
+        graphFetch(
+          `/sites/${spSiteId}/lists/${SP_CONFIG.lists.actions}/items/${j.actionId}/fields`,
+          'PATCH', { Avancement: jp.pct }
+        ).catch(e => console.warn('Sync avancement objectif:', e.message));
+      }
+
+      // Recalculer le % de l'axe correspondant (indépendant de autoCalcAxes)
+      const axeId  = APP.actions[aIdx].axe;
+      const axeObj = APP.axes.find(ax => ax.id === axeId);
+      if (axeObj) {
+        const axeActions = APP.actions.filter(a => a.axe === axeId);
+        axeObj.pct = Math.round(
+          axeActions.reduce((s, a) => s + (parseInt(a.pct) || 0), 0) / axeActions.length
+        );
+      }
+    }
+  }
+
+  // Rafraîchir tous les panneaux
   renderTimeline();
   renderActions();
   renderApercu();
   renderAxes();
-  // Si le panneau de détail de l'objectif parent est ouvert, le rafraîchir
+
+  // Si la fiche de détail de l'objectif est ouverte, la rafraîchir
   if (j.actionId) {
     const modalBg = document.getElementById('modal-bg');
     if (modalBg && modalBg.classList.contains('open')) {
