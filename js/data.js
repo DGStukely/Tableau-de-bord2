@@ -176,14 +176,10 @@ function mapAction(fields) {
 }
 
 function mapJalon(fields) {
-  const statut = fields.Statut || fields.statut || fields.Status || fields.Statut0 || "à faire";
-  // Lire la date depuis la colonne correcte (plusieurs noms possibles selon la config SP)
-  const date   = fields.DateJalon || fields.Date_du_jalon || fields.Date || "";
-  console.log('📋 mapJalon —', fields.Title,
-    '| Statut:', fields.Statut,
-    '| Date:', date,
-    '| ActionId:', fields.ActionId,
-    '| keys:', Object.keys(fields).join(','));
+  // Statut_Jalon est le vrai nom interne dans cette liste SP
+  const statut = fields.Statut_Jalon || fields.Statut || fields.statut || fields.Status || "à faire";
+  // Date — nom interne "Date" (affichée "Date du jalon")
+  const date   = fields.Date || fields.DateJalon || fields.Date_du_jalon || "";
   return {
     id:       fields._spId           || fields.id || '',
     date:     date,

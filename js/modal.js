@@ -835,13 +835,11 @@ async function saveJalon(andNew = false) {
     if (isLiveData && graphToken && spSiteId) {
       // Découvrir les vrais noms de colonnes
       const colMap  = await getJalonColMap();
-      console.log('🗂 saveJalon colMap:', JSON.stringify(colMap));
-      const colDate  = jalonField(colMap, 'Date du jalon', 'DateJalon', 'Date', 'date');
+      const colDate  = jalonField(colMap, 'Date du jalon', 'Date', 'DateJalon', 'date');
       const colStat  = jalonField(colMap, 'Statut', 'statut', 'Status');
       const colActId = jalonField(colMap, 'ActionId', 'actionid');
       const colDesc  = jalonField(colMap, 'Description', 'description');
-      const colAxe   = jalonField(colMap, 'Axe', 'Axe concerne', 'Axe_Strategique', 'axe');
-      console.log('🔍 Colonnes résolues — Date:', colDate, '| Statut:', colStat, '| Axe:', colAxe);
+      const colAxe   = jalonField(colMap, 'Axe concerne', 'Axe_Concerne', 'Axe', 'axe');
 
       // Champs à patcher (sans Title ni valeurs nulles)
       const patchFields = {};
@@ -925,12 +923,10 @@ async function toggleJalon(jalonId, checked) {
     try {
       const colMap    = await getJalonColMap();
       const colStatut = jalonField(colMap, 'Statut', 'statut', 'Status');
-      console.log('🔧 toggleJalon — colMap:', colMap, '| colStatut:', colStatut, '| valeur:', nouveauStatut, '| id:', jalonId);
       await graphFetch(
         `/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonId}/fields`,
         'PATCH', { [colStatut]: nouveauStatut }
       );
-      console.log('✅ toggleJalon — PATCH réussi');
     } catch(e) {
       console.error('❌ toggleJalon — erreur:', e.message);
       showToast('Erreur sauvegarde jalon : ' + e.message, 'error');
