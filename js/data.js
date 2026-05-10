@@ -176,13 +176,15 @@ function mapAction(fields) {
 }
 
 function mapJalon(fields) {
+  const statut = fields.Statut || fields.statut || fields.Status || fields.Statut0 || "à faire";
+  console.log('📋 mapJalon —', fields.Title, '| Statut brut SP:', fields.Statut, '| retenu:', statut);
   return {
     id:       fields._spId           || fields.id || '',
     date:     fields.Date            || fields.DateJalon,
     titre:    fields.Title           || fields.Titre,
     desc:     fields.Description     || fields.Description0 || "",
     actionId: fields.ActionId        || "",
-    statut:   (fields.Statut         || "à faire").toLowerCase(),
+    statut:   statut.toLowerCase(),
   };
 }
 

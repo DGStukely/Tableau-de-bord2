@@ -915,13 +915,16 @@ async function toggleJalon(jalonId, checked) {
   // Sauvegarder dans SharePoint
   if (isLiveData && graphToken && spSiteId && !String(jalonId).startsWith('local-')) {
     try {
-      const colMap = await getJalonColMap();
+      const colMap    = await getJalonColMap();
       const colStatut = jalonField(colMap, 'Statut', 'statut', 'Status');
+      console.log('🔧 toggleJalon — colMap:', colMap, '| colStatut:', colStatut, '| valeur:', nouveauStatut, '| id:', jalonId);
       await graphFetch(
         `/sites/${spSiteId}/lists/${SP_CONFIG.lists.jalons}/items/${jalonId}/fields`,
         'PATCH', { [colStatut]: nouveauStatut }
       );
+      console.log('✅ toggleJalon — PATCH réussi');
     } catch(e) {
+      console.error('❌ toggleJalon — erreur:', e.message);
       showToast('Erreur sauvegarde jalon : ' + e.message, 'error');
       j.statut = checked ? 'en cours' : 'terminée'; // annuler
     }
