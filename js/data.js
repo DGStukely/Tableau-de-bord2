@@ -177,10 +177,16 @@ function mapAction(fields) {
 
 function mapJalon(fields) {
   const statut = fields.Statut || fields.statut || fields.Status || fields.Statut0 || "à faire";
-  console.log('📋 mapJalon —', fields.Title, '| Statut brut SP:', fields.Statut, '| retenu:', statut);
+  // Lire la date depuis la colonne correcte (plusieurs noms possibles selon la config SP)
+  const date   = fields.DateJalon || fields.Date_du_jalon || fields.Date || "";
+  console.log('📋 mapJalon —', fields.Title,
+    '| Statut:', fields.Statut,
+    '| Date:', date,
+    '| ActionId:', fields.ActionId,
+    '| keys:', Object.keys(fields).join(','));
   return {
     id:       fields._spId           || fields.id || '',
-    date:     fields.Date            || fields.DateJalon,
+    date:     date,
     titre:    fields.Title           || fields.Titre,
     desc:     fields.Description     || fields.Description0 || "",
     actionId: fields.ActionId        || "",

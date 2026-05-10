@@ -835,10 +835,13 @@ async function saveJalon(andNew = false) {
     if (isLiveData && graphToken && spSiteId) {
       // Découvrir les vrais noms de colonnes
       const colMap  = await getJalonColMap();
-      const colDate  = jalonField(colMap, 'Date', 'DateJalon', 'date');
+      console.log('🗂 saveJalon colMap:', JSON.stringify(colMap));
+      const colDate  = jalonField(colMap, 'Date du jalon', 'DateJalon', 'Date', 'date');
       const colStat  = jalonField(colMap, 'Statut', 'statut', 'Status');
       const colActId = jalonField(colMap, 'ActionId', 'actionid');
       const colDesc  = jalonField(colMap, 'Description', 'description');
+      const colAxe   = jalonField(colMap, 'Axe', 'Axe concerne', 'Axe_Strategique', 'axe');
+      console.log('🔍 Colonnes résolues — Date:', colDate, '| Statut:', colStat, '| Axe:', colAxe);
 
       // Champs à patcher (sans Title ni valeurs nulles)
       const patchFields = {};
@@ -846,6 +849,11 @@ async function saveJalon(andNew = false) {
       if (statut)   patchFields[colStat]  = statut;
       if (actionId) patchFields[colActId] = actionId;
       if (desc)     patchFields[colDesc]  = desc;
+      // Remplir l'axe depuis l'objectif associé (colonne requise dans SP)
+      if (actionId && colAxe) {
+        const linkedAction = APP.actions.find(a => String(a.id) === String(actionId));
+        if (linkedAction && linkedAction.axe) patchFields[colAxe] = linkedAction.axe;
+      }
 
       if (jalonEditId && !String(jalonEditId).startsWith('local-')) {
         // Édition : PATCH tous les champs dont Title
