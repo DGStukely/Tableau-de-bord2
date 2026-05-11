@@ -112,6 +112,9 @@
               <div class="chart-box-lg">
                 <canvas id="chart-line"></canvas>
               </div>
+              <p style="text-align:center;font-size:.78rem;color:var(--c-text-3);margin-top:.5rem;">
+                Avancement moyen des objectifs par trimestre, selon leur date d'échéance
+              </p>
             </div>
           </div>
         </div>
@@ -195,7 +198,7 @@
       <div class="modal-body">
         <div class="settings-pane active" id="settings-pane-axes">
           <label style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;cursor:pointer;">
-            <input type="checkbox" id="auto-calc-axes"> Calculer automatiquement l'avancement des axes
+            <input type="checkbox" id="auto-calc-axes" onchange="toggleAutoCalc(this.checked)"> Calculer automatiquement l'avancement des axes
           </label>
           <div id="settings-axes-list"></div>
           <div class="add-item-form" style="margin-top:.75rem;background:var(--c-surface-2);border-radius:8px;padding:10px 12px;gap:8px;flex-wrap:wrap;align-items:flex-end;">
@@ -510,7 +513,8 @@
   <script src="js/notifications.js?v=3"></script>
   <script src="js/navigation.js?v=3"></script>
   <script>
-    if ('serviceWorker' in navigator) {
+    // Service Worker actif uniquement en production (pas en localhost pour le dev local)
+    if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then(r => console.info('Service Worker enregistré', r.scope))

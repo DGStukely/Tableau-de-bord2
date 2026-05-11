@@ -9,9 +9,10 @@ function calcAvancementAxes() {
     const actionsAxe = APP.actions.filter(a => a.axe === axe.id);
     if (actionsAxe.length > 0) {
       const total = actionsAxe.reduce((sum, a) => {
-        // Priorité : avancement calculé depuis les jalons cochés
-        const jp = (typeof getJalonProgress === 'function') ? getJalonProgress(a.id) : null;
-        return sum + (jp ? jp.pct : (parseInt(a.pct) || 0));
+        const jp  = (typeof getJalonProgress === 'function') ? getJalonProgress(a.id) : null;
+        // Prendre le max entre jalons cochés et % manuel (cohérent avec l'affichage)
+        const pct = jp !== null ? Math.max(jp.pct, parseInt(a.pct) || 0) : (parseInt(a.pct) || 0);
+        return sum + pct;
       }, 0);
       axe.pct = Math.round(total / actionsAxe.length);
     }
@@ -21,9 +22,9 @@ function calcAvancementAxes() {
 function renderApercu() {
   // KPIs
   const total    = APP.actions.length;
-  const done     = APP.actions.filter(a => a.statut === 'terminée').length;
-  const late     = APP.actions.filter(a => a.statut === 'en retard').length;
-  const inprog   = APP.actions.filter(a => a.statut === 'en cours').length;
+  const done     = APP.actions.filter(a => a.statut === 'terminée' || (parseInt(a.pct) || 0) >= 100).length;
+  const late     = APP.actions.filter(a => a.statut === 'en retard' && (parseInt(a.pct) || 0) < 100).length;
+  const inprog   = APP.actions.filter(a => a.statut === 'en cours'  && (parseInt(a.pct) || 0) < 100).length;
   const global   = APP.axes.length ? Math.round(APP.axes.reduce((s,a) => s+a.pct,0) / APP.axes.length) : 0;
 
   document.getElementById('kpi-grid').innerHTML = [
@@ -54,9 +55,12 @@ function renderApercu() {
     </div>
   `).join('');
 
-  // Donut
+  // Donut — les actions à 100% comptent comme "terminée"
   const counts = {};
-  APP.actions.forEach(a => { counts[a.statut] = (counts[a.statut]||0)+1; });
+  APP.actions.forEach(a => {
+    const s = ((parseInt(a.pct) || 0) >= 100) ? 'terminée' : a.statut;
+    counts[s] = (counts[s] || 0) + 1;
+  });
   const labs = Object.keys(counts);
   const vals = labs.map(l => counts[l]);
   const cols = labs.map(l => STATUS_MAP[l]?.dot || '#999');
@@ -81,24 +85,64 @@ function renderApercu() {
      </span>`
   ).join('');
 
-  // Courbe trimestrielle
-  const qLabels = ['T1 2024','T2','T3','T4','T1 2025','T2','T3','T4','T1 2026'];
-  const qData   = [12,18,24,31,38,45,51,57,62];
-  if (!APP.lineChart) APP.lineChart = new Chart(document.getElementById('chart-line'), {
-    type: 'line',
-    data: { labels: qLabels, datasets: [{
-      label: '%', data: qData,
-      borderColor: '#534AB7', backgroundColor: 'rgba(83,74,183,0.07)',
-      tension: 0.4, fill: true, pointBackgroundColor: '#534AB7', pointRadius: 4, borderWidth: 2
-    }]},
-    options: { responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { min:0, max:100, ticks: { callback: v => v+'%', font:{size:11} }, grid:{ color:'rgba(128,128,128,0.08)' } },
-        x: { ticks: { font:{size:11} }, grid:{ display:false } }
-      }
+  // Courbe trimestrielle — calculée depuis les vraies données
+  const actionsAvecEcheance = APP.actions.filter(a => a.echeance);
+  let qLabels = [], qData = [];
+
+  if (actionsAvecEcheance.length > 0) {
+    // Plage de dates : du plus tôt au plus tard
+    const allDates = actionsAvecEcheance.map(a => new Date(a.echeance)).filter(d => !isNaN(d));
+    const minD = new Date(Math.min(...allDates));
+    const maxD = new Date(Math.max(...allDates));
+
+    // Générer les trimestres couvrant la plage
+    let yr = minD.getFullYear(), qt = Math.floor(minD.getMonth() / 3);
+    const endYr = maxD.getFullYear(), endQt = Math.floor(maxD.getMonth() / 3);
+    const quarters = [];
+    while (yr < endYr || (yr === endYr && qt <= endQt)) {
+      const finTrimestre = new Date(yr, (qt + 1) * 3, 0, 23, 59, 59);
+      quarters.push({ label: `T${qt + 1} ${yr}`, date: finTrimestre });
+      qt++; if (qt > 3) { qt = 0; yr++; }
+      if (quarters.length > 24) break;
     }
-  });
+
+    qLabels = quarters.map(q => q.label);
+    qData   = quarters.map(q => {
+      // Actions dont l'échéance est dans ce trimestre ou avant
+      const dues = APP.actions.filter(a => a.echeance && new Date(a.echeance) <= q.date);
+      if (!dues.length) return 0;
+      const sum = dues.reduce((s, a) => {
+        const jp = (typeof getJalonProgress === 'function') ? getJalonProgress(a.id) : null;
+        return s + (jp !== null ? jp.pct : (parseInt(a.pct) || 0));
+      }, 0);
+      return Math.round(sum / dues.length);
+    });
+  } else {
+    qLabels = ['Aucune donnée'];
+    qData   = [0];
+  }
+
+  if (APP.lineChart) {
+    APP.lineChart.data.labels   = qLabels;
+    APP.lineChart.data.datasets[0].data = qData;
+    APP.lineChart.update('none');
+  } else {
+    APP.lineChart = new Chart(document.getElementById('chart-line'), {
+      type: 'line',
+      data: { labels: qLabels, datasets: [{
+        label: 'Avancement moyen (%)', data: qData,
+        borderColor: '#534AB7', backgroundColor: 'rgba(83,74,183,0.07)',
+        tension: 0.4, fill: true, pointBackgroundColor: '#534AB7', pointRadius: 4, borderWidth: 2
+      }]},
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { min:0, max:100, ticks: { callback: v => v+'%', font:{size:11} }, grid:{ color:'rgba(128,128,128,0.08)' } },
+          x: { ticks: { font:{size:11} }, grid:{ display:false } }
+        }
+      }
+    });
+  }
 }
 
 
@@ -267,8 +311,9 @@ function renderActions(filter, page) {
 
   document.getElementById('actions-tbody').innerHTML = pageList.map(a => {
     const axe = axeMap[a.axe] || { color:'#888', light:'#eee', nom:a.axe };
-    const sm  = STATUS_MAP[a.statut] || STATUS_MAP['à faire'];
-    const ci  = a.statut !== 'terminée' ? calcCible(a) : null;
+    const statutEff = (parseInt(a.pct) || 0) >= 100 ? 'terminée' : a.statut;
+    const sm  = STATUS_MAP[statutEff] || STATUS_MAP['à faire'];
+    const ci  = statutEff !== 'terminée' ? calcCible(a) : null;
     return `
       <tr>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
@@ -277,7 +322,7 @@ function renderActions(filter, page) {
         <td><span style="font-size:11px;padding:2px 8px;border-radius:99px;background:${h(axe.light)};color:${h(axe.color)};font-weight:500;">${h(a.axe)}</span></td>
         <td style="white-space:nowrap;">${h(a.resp)}</td>
         <td><span class="prio-badge" style="${getPrioBadgeStyle(a.prio)}"></span></td>
-        <td style="white-space:nowrap;font-size:12px;">${fmtDate(a.echeance)} ${a.statut !== 'terminée' ? formatDelai(a.echeance) : ''}</td>
+        <td style="white-space:nowrap;font-size:12px;">${fmtDate(a.echeance)} ${statutEff !== 'terminée' ? formatDelai(a.echeance) : ''}</td>
         <td>
           <div class="mini-bar-wrap">
             <div class="mini-bar"><div class="mini-fill" style="width:${h(a.pct)}%;background:${h(sm.dot)}"></div></div>
@@ -288,7 +333,7 @@ function renderActions(filter, page) {
             <span style="font-weight:600;color:${ci.gap >= 0 ? '#166534' : '#991B1B'};" title="${ci.gap >= 0 ? 'En avance' : 'En retard'} de ${Math.abs(ci.gap)} point${Math.abs(ci.gap) > 1 ? 's' : ''}">${ci.gap > 0 ? '▲&nbsp;+' : ci.gap < 0 ? '▼&nbsp;' : ''}${ci.gap}%</span>
           </div>` : ''}
         </td>
-        <td><span class="pill ${sm.pill}">${h(a.statut)}</span></td>
+        <td><span class="pill ${sm.pill}">${h(statutEff)}</span></td>
         <td style="white-space:nowrap;">
           <button onclick="openFormModal('${h(a.id)}')" title="Modifier" style="border:none;background:none;cursor:pointer;padding:5px 6px;border-radius:6px;color:#185FA5;" onmouseover="this.style.background='#E6F1FB'" onmouseout="this.style.background='none'">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -533,20 +578,12 @@ function renderGantt() {
   const endYear   = new Date(year, 11, 31);
   const totalDays = Math.round((endYear - startYear) / 86400000) + 1;
 
-  const allGanttActions = APP.actions.filter(a => {
-    if (!a.echeance) return false;
-    const d = parseLocalDate(a.echeance);
-    return (d && d.getFullYear() === year) || (a.dateDebut && parseLocalDate(a.dateDebut)?.getFullYear() === year);
-  });
-  const ganttTruncated = allGanttActions.length > 20;
-  const actions = allGanttActions.slice(0, 20);
-
   const axeMap = getAxeMap();
 
   let html = `<div style="font-size:11px;">`;
 
   // Header mois
-  html += `<div style="display:flex;margin-left:180px;margin-bottom:4px;">`;
+  html += `<div style="display:flex;margin-left:210px;margin-bottom:4px;">`;
   months.forEach((m, i) => {
     const w = new Date(year, i+1, 0).getDate() / totalDays * 100;
     html += `<div style="flex:0 0 ${w}%;font-size:10px;color:var(--c-text-3);text-align:center;border-left:0.5px solid var(--c-border);">${m}</div>`;
@@ -556,35 +593,55 @@ function renderGantt() {
   // Ligne aujourd'hui
   const todayPct = Math.round((now - startYear) / 86400000) / totalDays * 100;
 
-  // Lignes actions
-  actions.forEach(a => {
-    const axe = axeMap[a.axe] || { color:'#888' };
-    const echeance = parseLocalDate(a.echeance) || new Date(year, 11, 31);
-    const debut = parseLocalDate(a.dateDebut) || new Date(year, 0, 1);
-    const startPct = Math.max(0, Math.round((debut - startYear) / 86400000) / totalDays * 100);
-    const endPct   = Math.min(100, Math.round((echeance - startYear) / 86400000) / totalDays * 100);
-    if (endPct <= startPct) return; // dates incohérentes — ignorer cette barre
-    const width = endPct - startPct;
-    const sm = STATUS_MAP[a.statut] || STATUS_MAP['à faire'];
+  let anyAxe = false;
 
-    html += `<div style="display:flex;align-items:center;margin-bottom:5px;height:28px;">
-      <div style="width:180px;flex-shrink:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px;color:var(--c-text);" title="${h(a.titre)}">${h(a.titre)}</div>
+  // Une ligne par axe
+  APP.axes.forEach(axe => {
+    const actionsAxe = APP.actions.filter(a => a.axe === axe.id && a.echeance);
+    if (!actionsAxe.length) return;
+
+    // Dates min/max des objectifs de cet axe
+    const dates = actionsAxe.map(a => ({
+      debut:    parseLocalDate(a.dateDebut) || parseLocalDate(a.echeance),
+      echeance: parseLocalDate(a.echeance)
+    }));
+    const minDebut   = new Date(Math.min(...dates.map(d => d.debut)));
+    const maxEcheance= new Date(Math.max(...dates.map(d => d.echeance)));
+
+    // Ne montrer que si l'axe chevauche l'année affichée
+    if (maxEcheance < startYear || minDebut > endYear) return;
+    anyAxe = true;
+
+    const startPct = Math.max(0,   Math.round((minDebut    - startYear) / 86400000) / totalDays * 100);
+    const endPct   = Math.min(100, Math.round((maxEcheance - startYear) / 86400000) / totalDays * 100);
+    const width    = Math.max(0.5, endPct - startPct);
+
+    // Avancement réel de l'axe
+    const pct = axe.pct || 0;
+    const done  = actionsAxe.filter(a => (parseInt(a.pct)||0) >= 100 || a.statut === 'terminée').length;
+
+    html += `<div style="display:flex;align-items:center;margin-bottom:8px;height:32px;">
+      <div style="width:210px;flex-shrink:0;padding-right:10px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${h(axe.color)};flex-shrink:0;"></span>
+          <span style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--c-text);" title="${h(axe.nom)}">${h(axe.nom.slice(0,28))}${axe.nom.length>28?'…':''}</span>
+        </div>
+        <div style="font-size:10px;color:var(--c-text-3);padding-left:16px;">${done}/${actionsAxe.length} objectifs · ${pct}%</div>
+      </div>
       <div style="flex:1;position:relative;height:100%;border-left:0.5px solid var(--c-border);">
         <div style="position:absolute;left:${todayPct}%;top:0;bottom:0;width:1px;background:rgba(227,75,74,0.4);z-index:1;"></div>
-        <div style="position:absolute;left:${startPct}%;width:${width}%;top:4px;height:20px;background:${h(axe.color)};opacity:0.75;border-radius:4px;display:flex;align-items:center;padding:0 6px;overflow:hidden;" title="${h(a.titre)} — ${fmtDate(a.echeance)}">
-          <span style="font-size:10px;color:white;white-space:nowrap;font-weight:500;">${h(a.pct)}%</span>
+        <!-- Barre totale (fond) -->
+        <div style="position:absolute;left:${startPct}%;width:${width}%;top:6px;height:20px;background:${h(axe.color)};opacity:0.2;border-radius:4px;"></div>
+        <!-- Barre avancement -->
+        <div style="position:absolute;left:${startPct}%;width:${width * pct / 100}%;top:6px;height:20px;background:${h(axe.color)};opacity:0.85;border-radius:4px;display:flex;align-items:center;padding:0 6px;overflow:hidden;" title="${h(axe.nom)} — ${pct}%">
+          ${pct > 5 ? `<span style="font-size:10px;color:white;white-space:nowrap;font-weight:600;">${pct}%</span>` : ''}
         </div>
       </div>
     </div>`;
   });
 
-  if (actions.length === 0) {
-    html += `<div style="text-align:center;color:var(--c-text-3);padding:2rem;font-size:13px;">Aucun objectif avec échéance en ${year}</div>`;
-  }
-  if (ganttTruncated) {
-    html += `<div style="margin-top:8px;padding:6px 12px;background:var(--c-surface-2);border-radius:var(--radius-sm);font-size:11px;color:var(--c-text-3);text-align:center;">
-      ${allGanttActions.length - 20} objectif${allGanttActions.length - 20 > 1 ? 's' : ''} supplémentaire${allGanttActions.length - 20 > 1 ? 's' : ''} non affiché${allGanttActions.length - 20 > 1 ? 's' : ''} — affinez le filtre pour les voir
-    </div>`;
+  if (!anyAxe) {
+    html += `<div style="text-align:center;color:var(--c-text-3);padding:2rem;font-size:13px;">Aucun axe avec des objectifs ayant une échéance en ${year}</div>`;
   }
 
   html += `</div>`;

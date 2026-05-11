@@ -378,9 +378,13 @@ async function saveAction(andNew = false) {
   if (!resp && (APP.responsables || []).length > 0) { showFormError('Veuillez choisir un responsable.'); return; }
   if (!echeance) { showFormError('La date d\'échéance est obligatoire.'); return; }
 
-  // Ajustement automatique du statut selon la date d'échéance
+  // Ajustement automatique du statut
   let statutFinal = statut;
-  if (statutFinal !== 'terminée' && pct < 100 && echeance) {
+  if (pct >= 100) {
+    // 100% → terminée automatiquement
+    statutFinal = 'terminée';
+    document.getElementById('f-statut').value = 'terminée';
+  } else if (statutFinal !== 'terminée' && echeance) {
     const echeanceDate = new Date(echeance + 'T23:59:59');
     const now = new Date();
     if (echeanceDate < now && statutFinal !== 'en retard') {
@@ -388,7 +392,6 @@ async function saveAction(andNew = false) {
     } else if (echeanceDate >= now && statutFinal === 'en retard') {
       statutFinal = 'en cours';
     }
-    // Mettre à jour le select dans le formulaire pour refléter l'ajustement
     document.getElementById('f-statut').value = statutFinal;
   }
 
@@ -720,7 +723,8 @@ async function getJalonColMap() {
     (cols.value || []).forEach(c => {
       if (c.readOnly || c.hidden || (c.name || '').startsWith('_')) return;
       const dn = (c.displayName || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-      _jalonColMap[dn] = c.name;
+      // Préférer la première occurrence (ex: Date_Jalon avant Date pour "Date du jalon")
+      if (!_jalonColMap[dn]) _jalonColMap[dn] = c.name;
     });
     console.log('🗂 Colonnes Jalons:', _jalonColMap);
   } catch(e) {
@@ -843,7 +847,12 @@ async function saveJalon(andNew = false) {
 
       // Champs à patcher (sans Title ni valeurs nulles)
       const patchFields = {};
-      if (date)     patchFields[colDate]  = date + 'T00:00:00Z';
+      if (date) {
+        patchFields[colDate] = date + 'T00:00:00Z';
+        // Écrire aussi dans l'autre colonne date si différente (doublon SP)
+        if (colDate !== 'Date')      patchFields['Date']      = date + 'T00:00:00Z';
+        if (colDate !== 'Date_Jalon') patchFields['Date_Jalon'] = date + 'T00:00:00Z';
+      }
       if (statut)   patchFields[colStat]  = statut;
       if (actionId) patchFields[colActId] = actionId;
       if (desc)     patchFields[colDesc]  = desc;
@@ -941,11 +950,17 @@ async function toggleJalon(jalonId, checked) {
     if (jp !== null && aIdx !== -1) {
       APP.actions[aIdx].pct = jp.pct;
 
+      // Auto-statut selon progression jalons
+      const newStatut = jp.pct >= 100 ? 'terminée'
+                      : jp.pct  >  0  ? 'en cours'
+                      : 'à faire';
+      APP.actions[aIdx].statut = newStatut;
+
       // Synchroniser SharePoint (fire-and-forget, ne bloque pas l'UI)
       if (isLiveData && graphToken && spSiteId && !String(j.actionId).startsWith('local-')) {
         graphFetch(
           `/sites/${spSiteId}/lists/${SP_CONFIG.lists.actions}/items/${j.actionId}/fields`,
-          'PATCH', { Avancement: jp.pct }
+          'PATCH', { Avancement: jp.pct, Statut: newStatut }
         ).catch(e => console.warn('Sync avancement objectif:', e.message));
       }
 

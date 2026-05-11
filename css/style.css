@@ -246,6 +246,7 @@
     .p-prog    { background: var(--c-blue-l);   color: var(--c-blue); }
     .p-late    { background: var(--c-danger-l); color: var(--c-danger); }
     .p-hold    { background: var(--c-warn-l);   color: var(--c-warn); }
+    .p-suspend { background: #EDEAFD;           color: #5B4FCF; }
     .p-todo    { background: var(--c-surface-2); color: var(--c-text-3); }
 
     .prio-badge { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }

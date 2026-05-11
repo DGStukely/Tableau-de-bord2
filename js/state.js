@@ -41,11 +41,12 @@ function debouncedPersist() {
 }
 
 const STATUS_MAP = {
-  'terminée':   { pill:'p-done', dot:'#639922',  label:'Terminée' },
-  'en cours':   { pill:'p-prog', dot:'#378ADD',  label:'En cours' },
-  'en retard':  { pill:'p-late', dot:'#E24B4A',  label:'En retard' },
-  'en attente': { pill:'p-hold', dot:'#EF9F27',  label:'En attente' },
-  'à faire':    { pill:'p-todo', dot:'#9E9C96',  label:'À faire' },
+  'terminée':   { pill:'p-done',    dot:'#639922',  label:'Terminée' },
+  'en cours':   { pill:'p-prog',    dot:'#378ADD',  label:'En cours' },
+  'en retard':  { pill:'p-late',    dot:'#E24B4A',  label:'En retard' },
+  'en attente': { pill:'p-hold',    dot:'#EF9F27',  label:'En attente' },
+  'en suspend': { pill:'p-suspend', dot:'#7B68EE',  label:'En suspend' },
+  'à faire':    { pill:'p-todo',    dot:'#9E9C96',  label:'À faire' },
 };
 const PRIO_MAP = { haute:'pr-h', moyenne:'pr-m', basse:'pr-l' };
 

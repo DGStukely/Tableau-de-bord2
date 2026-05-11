@@ -35,7 +35,8 @@ async function doMsalSignIn() {
   try {
     const btnLogin = document.getElementById('btn-login');
     if (btnLogin) { btnLogin.disabled = true; btnLogin.textContent = "Connexion en cours…"; }
-    if (IS_ELECTRON) {
+    if (IS_ELECTRON || IS_LOCALHOST) {
+      // Popup sur localhost et Electron (évite les problèmes cross-origin de loginRedirect)
       const result = await msalInstance.loginPopup({ scopes: SCOPES });
       currentAccount = result.account;
       graphToken = result.accessToken;
@@ -54,13 +55,17 @@ async function doMsalSignIn() {
   }
 }
 async function initMSAL() {
-  if (IS_LOCALHOST) { loadDemoData(); return; }
   try {
+    // Utiliser l'origine courante comme redirectUri (localhost ou GitHub Pages)
+    const redirectUri = IS_LOCALHOST
+      ? (window.location.origin + '/')
+      : SP_CONFIG.redirectUri;
+
     msalInstance = new msal.PublicClientApplication({
       auth: {
         clientId:    SP_CONFIG.msalClientId,
         authority:   SP_CONFIG.msalAuthority,
-        redirectUri: SP_CONFIG.redirectUri,
+        redirectUri: redirectUri,
         navigateToLoginRequestUrl: true
       },
       cache: {
@@ -75,7 +80,12 @@ async function initMSAL() {
     window.__msalReady = true;
     window.__doSignIn = doMsalSignIn;
 
-    if (IS_ELECTRON) {
+    // Si cette page s'est chargée dans un popup MSAL (retour du login),
+    // MSAL gère l'échange de code en interne — ne pas lancer l'app
+    if (window.opener && window.opener !== window) return;
+
+    if (IS_ELECTRON || IS_LOCALHOST) {
+      // Popup mode — pas de redirect, vérifier le cache directement
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) {
         currentAccount = accounts[0];
@@ -127,7 +137,8 @@ async function acquireToken() {
     });
     graphToken = result.accessToken;
   } catch {
-    if (IS_ELECTRON) {
+    if (IS_ELECTRON || IS_LOCALHOST) {
+      // Popup sur localhost et Electron (jamais de redirect)
       const result = await msalInstance.acquireTokenPopup({
         scopes: SCOPES,
         account: currentAccount

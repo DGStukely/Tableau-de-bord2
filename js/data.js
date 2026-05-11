@@ -24,49 +24,26 @@ async function loadSpConfig() {
           let cfgLocal = null;
           try { cfgLocal = JSON.parse(localStorage.getItem('plan_strategique_config') || 'null'); } catch(_) {}
 
-          // Fusionner : garder le plus grand ensemble pour responsables et priorités
-          // (évite de perdre des données ajoutées localement quand SP est en retard)
-          const mergeById = (spArr, localArr) => {
-            if (!localArr || !localArr.length) return spArr || [];
-            if (!spArr    || !spArr.length)    return localArr;
-            // Union par id : SP en base, local complète
-            const map = {};
-            (spArr).forEach(x => { map[x.id] = x; });
-            (localArr).forEach(x => { if (!map[x.id]) map[x.id] = x; });
-            return Object.values(map);
-          };
+          // SharePoint est la source de vérité — localStorage sert uniquement de fallback hors ligne
+          if (cfgSp.responsables?.length) APP.responsables = cfgSp.responsables;
+          if (cfgSp.statuts?.length)      APP.statuts      = cfgSp.statuts;
+          if (cfgSp.priorites?.length)    APP.priorites    = cfgSp.priorites;
+          if (cfgSp.autoCalcAxes !== undefined) APP.autoCalcAxes = cfgSp.autoCalcAxes;
+          if (cfgSp.theme)                APP.theme        = cfgSp.theme;
 
-          // Pour statuts et autoCalcAxes : timestamp décide
-          const dateSp    = cfgSp.savedAt    ? new Date(cfgSp.savedAt).getTime()    : 0;
-          const dateLocal = cfgLocal?.savedAt ? new Date(cfgLocal.savedAt).getTime() : 0;
-          const spIsNewer = dateSp >= dateLocal;
+          // Restaurer couleurs et descriptions des axes depuis SP
+          const axesMeta = cfgSp.axesMeta || [];
+          axesMeta.forEach(meta => {
+            const axe = (APP.axes || []).find(a => a.id === meta.id);
+            if (axe) {
+              if (meta.color) axe.color = meta.color;
+              if (meta.light) axe.light = meta.light;
+              if (meta.desc)  axe.desc  = meta.desc;
+            }
+          });
 
-          const merged = {
-            responsables: mergeById(cfgSp.responsables, cfgLocal?.responsables),
-            statuts:      spIsNewer ? (cfgSp.statuts || cfgLocal?.statuts || [])
-                                    : (cfgLocal?.statuts || cfgSp.statuts || []),
-            priorites:    mergeById(cfgSp.priorites, cfgLocal?.priorites),
-            autoCalcAxes: spIsNewer ? (cfgSp.autoCalcAxes ?? cfgLocal?.autoCalcAxes ?? false)
-                                    : (cfgLocal?.autoCalcAxes ?? cfgSp.autoCalcAxes ?? false),
-            theme:        cfgLocal?.theme || cfgSp.theme || 'grey'
-          };
-
-          if (merged.responsables.length) APP.responsables = merged.responsables;
-          if (merged.statuts.length)      APP.statuts      = merged.statuts;
-          if (merged.priorites.length)    APP.priorites    = merged.priorites;
-          APP.autoCalcAxes = merged.autoCalcAxes;
-          if (merged.theme) APP.theme = merged.theme;
-
-          // Si les données fusionnées sont plus complètes que SP → repousser vers SP
-          const spResp  = (cfgSp.responsables || []).length;
-          const spPrios = (cfgSp.priorites    || []).length;
-          if (merged.responsables.length > spResp || merged.priorites.length > spPrios) {
-            console.info('loadSpConfig: données locales plus complètes, push vers SP...');
-            setTimeout(() => persistSpConfig(), 800);
-          }
-
-          // Mettre localStorage à jour
-          localStorage.setItem('plan_strategique_config', JSON.stringify({ ...merged, savedAt: new Date().toISOString() }));
+          // Mettre localStorage à jour (cache hors ligne)
+          localStorage.setItem('plan_strategique_config', JSON.stringify({ ...cfgSp, savedAt: new Date().toISOString() }));
         } catch(e) { console.warn('Config SP parse error', e); }
       }
     }
@@ -75,11 +52,16 @@ async function loadSpConfig() {
 
 async function persistSpConfig() {
   if (!isLiveData || !graphToken || !spSiteId) return;
+  // Sauvegarder aussi couleurs et descriptions des axes (absent de SP)
+  const axesMeta = (APP.axes || []).map(a => ({
+    id: a.id, color: a.color, light: a.light, desc: a.desc
+  }));
   const valeur = JSON.stringify({
     responsables: APP.responsables || [],
     statuts:      APP.statuts      || [],
     priorites:    APP.priorites    || [],
     autoCalcAxes: APP.autoCalcAxes || false,
+    axesMeta,
     savedAt:      new Date().toISOString()
   });
   try {
@@ -179,7 +161,8 @@ function mapJalon(fields) {
   // Statut_Jalon est le vrai nom interne dans cette liste SP
   const statut = fields.Statut_Jalon || fields.Statut || fields.statut || fields.Status || "à faire";
   // Date — nom interne "Date" (affichée "Date du jalon")
-  const date   = fields.Date || fields.DateJalon || fields.Date_du_jalon || "";
+  const _dateRaw = fields.Date_Jalon || fields.Date || fields.DateJalon || fields.Date_du_jalon || "";
+  const date = _dateRaw ? (() => { try { return new Date(_dateRaw).toISOString().split('T')[0]; } catch { return _dateRaw; } })() : "";
   return {
     id:       fields._spId           || fields.id || '',
     date:     date,
