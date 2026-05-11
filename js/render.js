@@ -21,18 +21,28 @@ function calcAvancementAxes() {
 
 function renderApercu() {
   // KPIs
-  const total    = APP.actions.length;
-  const done     = APP.actions.filter(a => a.statut === 'terminée' || (parseInt(a.pct) || 0) >= 100).length;
-  const late     = APP.actions.filter(a => a.statut === 'en retard' && (parseInt(a.pct) || 0) < 100).length;
-  const inprog   = APP.actions.filter(a => a.statut === 'en cours'  && (parseInt(a.pct) || 0) < 100).length;
-  const global   = APP.axes.length ? Math.round(APP.axes.reduce((s,a) => s+a.pct,0) / APP.axes.length) : 0;
+  const total  = APP.actions.length;
+  const done   = APP.actions.filter(a => (parseInt(a.pct) || 0) >= 100 || a.statut === 'terminée').length;
+  const late   = APP.actions.filter(a => a.statut === 'en retard' && (parseInt(a.pct) || 0) < 100).length;
+  const inprog = APP.actions.filter(a => a.statut === 'en cours'  && (parseInt(a.pct) || 0) < 100).length;
+  const pct100 = total > 0 ? Math.round(done / total * 100) : 0;
+  const pctLate = total > 0 ? Math.round(late / total * 100) : 0;
+  const pctProg = total > 0 ? Math.round(inprog / total * 100) : 0;
+
+  // Avancement global = moyenne du % réel de chaque action (jalons prioritaires)
+  const global = total > 0 ? Math.round(
+    APP.actions.reduce((s, a) => {
+      const jp = (typeof getJalonProgress === 'function') ? getJalonProgress(a.id) : null;
+      return s + (jp !== null ? Math.max(jp.pct, parseInt(a.pct) || 0) : (parseInt(a.pct) || 0));
+    }, 0) / total
+  ) : 0;
 
   document.getElementById('kpi-grid').innerHTML = [
-    { label:'Avancement global', value:`${global}<sup>%</sup>`, delta:'↑ +8% ce trimestre', cls:'kpi-up' },
+    { label:'Avancement global', value:`${global}<sup>%</sup>`, delta:`${done} objectif${done!==1?'s':''} terminé${done!==1?'s':''}`, cls: global > 0 ? 'kpi-up' : 'kpi-neutral' },
     { label:'Objectifs totaux',  value:total,  delta:`Sur ${APP.axes.length} axes`, cls:'kpi-neutral' },
-    { label:'Terminées',         value:done,   delta:`${Math.round(done/total*100)}% du total`, cls:'kpi-up' },
-    { label:'En retard',         value:late,   delta:`${Math.round(late/total*100)}% du total`, cls:'kpi-down' },
-    { label:'En cours',          value:inprog, delta:`${Math.round(inprog/total*100)}% du total`, cls:'kpi-neutral' },
+    { label:'Terminées',         value:done,   delta:`${pct100}% du total`, cls:'kpi-up' },
+    { label:'En retard',         value:late,   delta:`${pctLate}% du total`, cls: late > 0 ? 'kpi-down' : 'kpi-neutral' },
+    { label:'En cours',          value:inprog, delta:`${pctProg}% du total`, cls:'kpi-neutral' },
   ].map(k => `
     <div class="kpi-card">
       <div class="kpi-label">${k.label}</div>
