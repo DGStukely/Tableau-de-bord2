@@ -85,64 +85,45 @@ function renderApercu() {
      </span>`
   ).join('');
 
-  // Courbe trimestrielle — calculée depuis les vraies données
-  const actionsAvecEcheance = APP.actions.filter(a => a.echeance);
-  let qLabels = [], qData = [];
+  // Graphique barres empilées — objectifs par axe et par statut
+  const STATUTS_CHART = ['terminée','en cours','en attente','en suspend','en retard','à faire'];
+  const axeLabels = APP.axes.map(a => a.id);
 
-  if (actionsAvecEcheance.length > 0) {
-    // Plage de dates : du plus tôt au plus tard
-    const allDates = actionsAvecEcheance.map(a => new Date(a.echeance)).filter(d => !isNaN(d));
-    const minD = new Date(Math.min(...allDates));
-    const maxD = new Date(Math.max(...allDates));
-
-    // Générer les trimestres couvrant la plage
-    let yr = minD.getFullYear(), qt = Math.floor(minD.getMonth() / 3);
-    const endYr = maxD.getFullYear(), endQt = Math.floor(maxD.getMonth() / 3);
-    const quarters = [];
-    while (yr < endYr || (yr === endYr && qt <= endQt)) {
-      const finTrimestre = new Date(yr, (qt + 1) * 3, 0, 23, 59, 59);
-      quarters.push({ label: `T${qt + 1} ${yr}`, date: finTrimestre });
-      qt++; if (qt > 3) { qt = 0; yr++; }
-      if (quarters.length > 24) break;
-    }
-
-    qLabels = quarters.map(q => q.label);
-    qData   = quarters.map(q => {
-      // Actions dont l'échéance est dans ce trimestre ou avant
-      const dues = APP.actions.filter(a => a.echeance && new Date(a.echeance) <= q.date);
-      if (!dues.length) return 0;
-      const sum = dues.reduce((s, a) => {
-        const jp = (typeof getJalonProgress === 'function') ? getJalonProgress(a.id) : null;
-        return s + (jp !== null ? jp.pct : (parseInt(a.pct) || 0));
-      }, 0);
-      return Math.round(sum / dues.length);
+  const barDatasets = STATUTS_CHART.map(s => {
+    const data = APP.axes.map(axe => {
+      const acts = APP.actions.filter(a => a.axe === axe.id);
+      return acts.filter(a => (((parseInt(a.pct)||0) >= 100) ? 'terminée' : a.statut) === s).length;
     });
-  } else {
-    qLabels = ['Aucune donnée'];
-    qData   = [0];
-  }
+    return { label: STATUS_MAP[s]?.label || s, data, backgroundColor: STATUS_MAP[s]?.dot || '#999', borderRadius: 2 };
+  }).filter(d => d.data.some(v => v > 0));
 
-  if (APP.lineChart) {
-    APP.lineChart.data.labels   = qLabels;
-    APP.lineChart.data.datasets[0].data = qData;
-    APP.lineChart.update('none');
-  } else {
-    APP.lineChart = new Chart(document.getElementById('chart-line'), {
-      type: 'line',
-      data: { labels: qLabels, datasets: [{
-        label: 'Avancement moyen (%)', data: qData,
-        borderColor: '#534AB7', backgroundColor: 'rgba(83,74,183,0.07)',
-        tension: 0.4, fill: true, pointBackgroundColor: '#534AB7', pointRadius: 4, borderWidth: 2
-      }]},
-      options: { responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { min:0, max:100, ticks: { callback: v => v+'%', font:{size:11} }, grid:{ color:'rgba(128,128,128,0.08)' } },
-          x: { ticks: { font:{size:11} }, grid:{ display:false } }
+  const tickColor = 'rgba(200,200,200,0.7)';
+  const gridColor = 'rgba(128,128,128,0.08)';
+
+  if (APP.lineChart) { APP.lineChart.destroy(); APP.lineChart = null; }
+  APP.lineChart = new Chart(document.getElementById('chart-line'), {
+    type: 'bar',
+    data: { labels: axeLabels, datasets: barDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true, position: 'bottom',
+          labels: { boxWidth: 12, padding: 14, font: { size: 11 }, color: tickColor }
+        },
+        tooltip: {
+          callbacks: {
+            title: items => APP.axes[items[0].dataIndex]?.nom || items[0].label,
+            label: c => ` ${c.dataset.label} : ${c.parsed.y}`
+          }
         }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font:{size:11}, color: tickColor }, grid:{ display:false } },
+        y: { stacked: true, ticks: { font:{size:11}, color: tickColor, stepSize:1, precision:0 }, grid:{ color: gridColor } }
       }
-    });
-  }
+    }
+  });
 }
 
 
