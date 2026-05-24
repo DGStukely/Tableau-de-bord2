@@ -262,10 +262,14 @@ async function saveAxe(i) {
       }
     }
     // 2. Couleurs + descriptions dans la liste Configuration (axesMeta)
-    await persistSpConfig();
+    const ok = await persistSpConfig();
+    if (typeof showToast === 'function') {
+      showToast(ok ? '✅ Couleurs de l\'axe sauvegardées' : '⚠️ Erreur : couleurs non sauvegardées sur SharePoint', ok ? 'success' : 'error');
+    }
   }
 
   renderSettingsAxes();
+  if (typeof renderApp === 'function') renderApp();
 }
 
 /* --- RESPONSABLES --- */
