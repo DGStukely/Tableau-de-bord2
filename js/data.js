@@ -87,10 +87,24 @@ async function persistSpConfig() {
     }
 
     if (_spConfigItemId) {
-      await graphFetch(
-        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items/${_spConfigItemId}/fields`,
-        'PATCH', { Valeur: valeur }
-      );
+      try {
+        await graphFetch(
+          `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items/${_spConfigItemId}/fields`,
+          'PATCH', { Valeur: valeur }
+        );
+      } catch(e404) {
+        // L'item a été supprimé/recréé — réinitialiser l'ID et créer un nouvel item
+        if (e404.message && e404.message.includes('404')) {
+          _spConfigItemId = null;
+          const res = await graphFetch(
+            `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items`,
+            'POST', { fields: { Title: 'dashboard_config', Valeur: valeur } }
+          );
+          _spConfigItemId = res.id;
+        } else {
+          throw e404;
+        }
+      }
     } else {
       const res = await graphFetch(
         `/sites/${spSiteId}/lists/${SP_CONFIG.lists.config}/items`,
@@ -188,19 +202,18 @@ async function loadSharePointData() {
     setLoadingStep("Chargement des jalons…");
     const rawJalons  = await getListItems(SP_CONFIG.lists.jalons);
     setLoadingStep("Chargement de la configuration…");
-    await loadSpConfig();
 
-    // Charger les axes SharePoint
+    // SharePoint est la source de vérité pour les axes
     const spAxes = rawAxes.map(mapAxe);
 
-    // Charger les paramètres sauvegardés (axes perso, responsables, etc.)
+    // loadSettings pour responsables/statuts/priorités (localStorage)
+    // puis on réimpose les axes SP pour éviter que le cache local les écrase
     loadSettings();
-    
-    // Fusionner : garder les axes du localStorage, compléter avec ceux de SharePoint
-    const savedAxeIds = (APP.axes || []).map(a => a.id);
-    const newSpAxes = spAxes.filter(a => !savedAxeIds.includes(a.id));
-    APP.axes = [...(APP.axes || []), ...newSpAxes];
+    APP.axes = spAxes;
+    invalidateAxeMap();
 
+    // Appliquer couleurs et config depuis la liste Configuration SP
+    await loadSpConfig();
     invalidateAxeMap();
 
     APP.actions = rawActions.map(mapAction);
