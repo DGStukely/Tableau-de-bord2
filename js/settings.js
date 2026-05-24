@@ -247,17 +247,22 @@ async function saveAxe(i) {
   invalidateAxeMap();
   persistSettings();
 
-  // Sauvegarder dans SharePoint si connecté et si l'axe a un ID SharePoint
-  if (isLiveData && graphToken && spSiteId && axeOld.spId) {
-    try {
-      await graphFetch(
-        `/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/items/${axeOld.spId}/fields`,
-        'PATCH',
-        { Avancement: pct }
-      );
-    } catch(e) {
-      console.warn('Mise à jour SharePoint axe échouée :', e.message);
+  // Sauvegarder dans SharePoint si connecté
+  if (isLiveData && graphToken && spSiteId) {
+    // 1. Avancement dans la liste Axes_Strategiques
+    if (axeOld.spId) {
+      try {
+        await graphFetch(
+          `/sites/${spSiteId}/lists/${SP_CONFIG.lists.axes}/items/${axeOld.spId}/fields`,
+          'PATCH',
+          { Avancement: pct }
+        );
+      } catch(e) {
+        console.warn('Mise à jour SharePoint axe échouée :', e.message);
+      }
     }
+    // 2. Couleurs + descriptions dans la liste Configuration (axesMeta)
+    await persistSpConfig();
   }
 
   renderSettingsAxes();
