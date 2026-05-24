@@ -1,6 +1,14 @@
 /* ================================================================
    6. RENDU — APERÇU
    ================================================================ */
+
+/** Formater un montant en dollars canadiens : 125 000 $ */
+function formatBudget(n) {
+  const num = parseFloat(n);
+  if (!num || isNaN(num)) return null;
+  return num.toLocaleString('fr-CA', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' $';
+}
+
 function calcAvancementAxes() {
   if (!APP.autoCalcAxes) return; // Calcul auto désactivé
   // Calculer automatiquement l'avancement de chaque axe
@@ -37,12 +45,18 @@ function renderApercu() {
     }, 0) / total
   ) : 0;
 
+  // Calcul du budget total
+  const totalBudget = APP.actions.reduce((s, a) => s + (parseFloat(a.budget) || 0), 0);
+  const budgetFmt = formatBudget(totalBudget) || '—';
+  const nbAvecBudget = APP.actions.filter(a => parseFloat(a.budget) > 0).length;
+
   document.getElementById('kpi-grid').innerHTML = [
     { label:'Avancement global', value:`${global}<sup>%</sup>`, delta:`${done} objectif${done!==1?'s':''} terminé${done!==1?'s':''}`, cls: global > 0 ? 'kpi-up' : 'kpi-neutral' },
     { label:'Objectifs totaux',  value:total,  delta:`Sur ${APP.axes.length} axes`, cls:'kpi-neutral' },
     { label:'Terminées',         value:done,   delta:`${pct100}% du total`, cls:'kpi-up' },
     { label:'En retard',         value:late,   delta:`${pctLate}% du total`, cls: late > 0 ? 'kpi-down' : 'kpi-neutral' },
     { label:'En cours',          value:inprog, delta:`${pctProg}% du total`, cls:'kpi-neutral' },
+    { label:'Budget total prévu', value:`<span style="font-size:18px;">${budgetFmt}</span>`, delta:`${nbAvecBudget} objectif${nbAvecBudget!==1?'s':''} budgétisé${nbAvecBudget!==1?'s':''}`, cls:'kpi-neutral' },
   ].map(k => `
     <div class="kpi-card">
       <div class="kpi-label">${k.label}</div>
@@ -50,6 +64,42 @@ function renderApercu() {
       <div class="kpi-delta ${k.cls}">${k.delta}</div>
     </div>
   `).join('');
+
+  // Section budget par axe
+  const budgetSection = document.getElementById('budget-section');
+  if (budgetSection) {
+    const axesBudget = APP.axes.map(axe => {
+      const acts = APP.actions.filter(a => a.axe === axe.id);
+      const total = acts.reduce((s, a) => s + (parseFloat(a.budget) || 0), 0);
+      const nb = acts.filter(a => parseFloat(a.budget) > 0).length;
+      return { axe, total, nb };
+    }).filter(ab => ab.total > 0);
+
+    if (axesBudget.length === 0) {
+      budgetSection.innerHTML = '';
+    } else {
+      const grandTotal = axesBudget.reduce((s, ab) => s + ab.total, 0);
+      budgetSection.innerHTML = `
+        <div class="budget-section-title">Budget prévu par axe</div>
+        <div class="budget-grid">
+          ${axesBudget.map(ab => {
+            const pct = grandTotal > 0 ? Math.round(ab.total / grandTotal * 100) : 0;
+            return `
+            <div class="budget-card">
+              <div class="budget-card-header">
+                <span class="budget-card-dot" style="background:${h(ab.axe.color)}"></span>
+                <span class="budget-card-nom" title="${h(ab.axe.nom)}">${h(ab.axe.nom)}</span>
+              </div>
+              <div class="budget-card-amount">${formatBudget(ab.total)}</div>
+              <div class="budget-card-sub">${pct}% du budget · ${ab.nb} objectif${ab.nb!==1?'s':''}</div>
+              <div style="margin-top:4px;height:3px;border-radius:99px;background:var(--c-surface-2);">
+                <div style="width:${pct}%;height:100%;border-radius:99px;background:${h(ab.axe.color)};transition:width .7s;"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+  }
 
   // Barres axes
   document.getElementById('axes-bars').innerHTML = APP.axes.map(a => `
