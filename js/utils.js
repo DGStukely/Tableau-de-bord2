@@ -120,3 +120,86 @@ async function refreshData() {
     document.querySelector('.nav-item[onclick*="refreshData"]').style.opacity = '1';
   }
 }
+
+/* ================================================================
+   SYNCHRONISATION SILENCIEUSE — toutes les 5 minutes
+   Met à jour les données sans rechargement ni interruption
+   ================================================================ */
+async function silentSync() {
+  // Ne synchroniser que si connecté à SharePoint
+  if (!isLiveData || !graphToken || !spSiteId) return;
+
+  // Ne pas synchroniser si une modale est ouverte (édition en cours)
+  const modalesOuvertes = ['form-modal-bg', 'jalon-modal-bg', 'modal-bg']
+    .some(id => { const el = document.getElementById(id); return el && el.style.display !== 'none' && el.style.display !== ''; });
+  if (modalesOuvertes) return;
+
+  try {
+    // Indiquer visuellement que la synchro est en cours (point qui clignote)
+    const dotEl = document.getElementById('sp-dot');
+    if (dotEl) dotEl.style.opacity = '0.4';
+
+    // Récupérer les 3 listes en parallèle
+    const [rawAxes, rawActions, rawJalons] = await Promise.all([
+      getListItems(SP_CONFIG.lists.axes),
+      getListItems(SP_CONFIG.lists.actions),
+      getListItems(SP_CONFIG.lists.jalons),
+    ]);
+
+    // Préserver les couleurs/descriptions des axes (non stockées dans SP Axes)
+    const savedColors = {};
+    (APP.axes || []).forEach(a => {
+      const key = a.id || a.nom;
+      if (key) savedColors[key] = { color: a.color, light: a.light, desc: a.desc };
+      if (a.nom) savedColors[a.nom] = { color: a.color, light: a.light, desc: a.desc };
+    });
+
+    // Mettre à jour APP
+    const spAxes = rawAxes.map(mapAxe);
+    spAxes.forEach(a => {
+      const lc = savedColors[a.id] || savedColors[a.nom];
+      if (lc) {
+        if (lc.color) a.color = lc.color;
+        if (lc.light) a.light = lc.light;
+        if (lc.desc)  a.desc  = lc.desc;
+      }
+    });
+    APP.axes    = spAxes;
+    invalidateAxeMap();
+    APP.actions = rawActions.map(mapAction);
+    APP.jalons  = rawJalons.map(mapJalon);
+
+    calcAvancementAxes();
+
+    // Re-rendre uniquement le panneau actif (pas de rechargement complet)
+    const activePane = document.querySelector('.pane.active');
+    if (activePane) {
+      switch (activePane.id) {
+        case 'pane-apercu':    renderApercu();    break;
+        case 'pane-actions':   renderActions();   break;
+        case 'pane-axes':      renderAxes();      break;
+        case 'pane-timeline':  renderTimeline();  break;
+        case 'pane-mavue':     renderMaVue();     break;
+        case 'pane-gantt':     renderGantt();     break;
+      }
+    }
+
+    checkAlertes();
+    persistData(); // Mettre à jour le cache hors ligne
+
+    // Mettre à jour l'indicateur avec l'heure de synchro
+    const now     = new Date();
+    const timeStr = now.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+    const lblEl   = document.getElementById('sp-label');
+    if (lblEl) lblEl.textContent = `Live · ${timeStr}`;
+    if (dotEl) { dotEl.style.opacity = '1'; dotEl.className = 'sp-dot sp-live'; }
+
+  } catch(e) {
+    console.warn('Auto-sync silencieux échoué :', e.message);
+    const dotEl = document.getElementById('sp-dot');
+    if (dotEl) dotEl.style.opacity = '1'; // Restaurer l'opacité même en cas d'erreur
+  }
+}
+
+/* Lancer la synchro auto toutes les 5 minutes */
+setInterval(silentSync, 5 * 60 * 1000);
