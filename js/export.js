@@ -363,14 +363,19 @@ function exportDashboardPDF() {
   const inprog  = APP.actions.filter(a => a.statut === 'en cours').length;
   const waiting = APP.actions.filter(a => a.statut === 'en attente').length;
   const global  = APP.axes.length ? Math.round(APP.axes.reduce((s,a) => s + a.pct, 0) / APP.axes.length) : 0;
+  const totalBudget = APP.actions.reduce((s, a) => s + (parseFloat(a.budget) || 0), 0);
+  const budgetStr = totalBudget > 0
+    ? totalBudget.toLocaleString('fr-CA', { minimumFractionDigits:0, maximumFractionDigits:0 }) + ' $'
+    : '—';
 
   const kpis = [
     { label:'Avancement global', val:`${global}%`, color: PURPLE },
-    { label:'Objectifs totaux',  val:total,         color:[26,25,23] },
-    { label:'Terminés',          val:done,          color:[99,153,34] },
-    { label:'En retard',         val:late,          color:[226,75,74] },
-    { label:'En cours',          val:inprog,        color:[55,138,221] },
-    { label:'En attente',        val:waiting,       color:[239,159,39] },
+    { label:'Objectifs totaux',  val:total,        color:[26,25,23] },
+    { label:'Terminés',          val:done,         color:[99,153,34] },
+    { label:'En retard',         val:late,         color:[226,75,74] },
+    { label:'En cours',          val:inprog,       color:[55,138,221] },
+    { label:'En attente',        val:waiting,      color:[239,159,39] },
+    { label:'Budget prévu',      val:budgetStr,    color:[26,25,23], small:true },
   ];
   const kW = (CW - (kpis.length - 1) * 8) / kpis.length;
   const kH = 52;
@@ -386,7 +391,7 @@ function exportDashboardPDF() {
     doc.setTextColor(140, 140, 140);
     doc.text(k.label, kx + kW / 2, y + 16, { align: 'center' });
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(i === 0 ? 20 : 18);
+    doc.setFontSize(k.small ? 11 : (i === 0 ? 20 : 18));
     doc.setTextColor(...k.color);
     doc.text(String(k.val), kx + kW / 2, y + 38, { align: 'center' });
   });
@@ -417,10 +422,15 @@ function exportDashboardPDF() {
   const axeMap = getAxeMap();
   let yAxe = y;
   APP.axes.forEach(axe => {
-    const rgb    = hr(axe.color);
-    const nbObj  = APP.actions.filter(a => a.axe === axe.id).length;
-    const nbDone = APP.actions.filter(a => a.axe === axe.id && a.statut === 'terminée').length;
-    const nbLate = APP.actions.filter(a => a.axe === axe.id && a.statut === 'en retard').length;
+    const rgb      = hr(axe.color);
+    const actsAxe  = APP.actions.filter(a => a.axe === axe.id);
+    const nbObj    = actsAxe.length;
+    const nbDone   = actsAxe.filter(a => a.statut === 'terminée').length;
+    const nbLate   = actsAxe.filter(a => a.statut === 'en retard').length;
+    const axeBudget = actsAxe.reduce((s, a) => s + (parseFloat(a.budget) || 0), 0);
+    const axeBudgetStr = axeBudget > 0
+      ? axeBudget.toLocaleString('fr-CA', { minimumFractionDigits:0, maximumFractionDigits:0 }) + ' $'
+      : '';
 
     // Point couleur + nom
     doc.setFillColor(...rgb);
@@ -431,11 +441,17 @@ function exportDashboardPDF() {
     const nomTrunc = doc.splitTextToSize(axe.nom, colLeftW - 90)[0];
     doc.text(nomTrunc, colLeft + 14, yAxe + 8);
 
-    // Pourcentage
+    // Pourcentage + budget (à droite)
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...rgb);
     doc.text(`${axe.pct}%`, colLeft + colLeftW, yAxe + 8, { align: 'right' });
+    if (axeBudgetStr) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(160, 160, 160);
+      doc.text(axeBudgetStr, colLeft + colLeftW, yAxe + 17, { align: 'right' });
+    }
 
     // Barre de progression
     const barY = yAxe + 12;
