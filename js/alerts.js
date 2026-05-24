@@ -20,7 +20,7 @@ function checkAlertes() {
     const due = parseLocalDate(a.echeance);
     if (!due) return false;
     const diff = Math.round((due - today) / 86400000);
-    return diff >= 0 && diff <= 7;
+    return diff >= 0 && diff <= 30;
   });
 
   // Badge sur le menu Actions
@@ -53,7 +53,7 @@ function checkAlertes() {
   }
 
   if (soon.length > 0) {
-    html += `<strong style="color:#854F0B;">${soon.length} échéant sous 7 jours :</strong> `;
+    html += `<strong style="color:#854F0B;">${soon.length} échéant sous 30 jours :</strong> `;
     html += soon.slice(0, 2).map(a => {
       const due  = parseLocalDate(a.echeance);
       const diff = Math.round((due - today) / 86400000);
