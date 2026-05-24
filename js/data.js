@@ -34,11 +34,16 @@ async function loadSpConfig() {
           // Restaurer couleurs et descriptions des axes depuis SP
           const axesMeta = cfgSp.axesMeta || [];
           axesMeta.forEach(meta => {
-            const axe = (APP.axes || []).find(a => a.id === meta.id);
+            // Chercher l'axe par spId (le plus fiable), puis id, puis nom
+            const axe = (APP.axes || []).find(a =>
+              (meta.spId && a.spId && String(a.spId) === String(meta.spId)) ||
+              (meta.id && a.id && a.id === meta.id) ||
+              (meta.nom && a.nom && a.nom.trim() === meta.nom.trim())
+            );
             if (axe) {
               if (meta.color) axe.color = meta.color;
               if (meta.light) axe.light = meta.light;
-              if (meta.desc)  axe.desc  = meta.desc;
+              if (meta.desc !== undefined) axe.desc = meta.desc;
             }
           });
 
@@ -54,7 +59,7 @@ async function persistSpConfig() {
   if (!isLiveData || !graphToken || !spSiteId) return;
   // Sauvegarder aussi couleurs et descriptions des axes (absent de SP)
   const axesMeta = (APP.axes || []).map(a => ({
-    id: a.id, color: a.color, light: a.light, desc: a.desc
+    id: a.id, nom: a.nom, spId: a.spId, color: a.color, light: a.light, desc: a.desc
   }));
   const valeur = JSON.stringify({
     responsables: APP.responsables || [],
