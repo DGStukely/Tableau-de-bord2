@@ -214,10 +214,29 @@ async function loadSharePointData() {
     // loadSettings pour responsables/statuts/priorités (localStorage)
     // puis on réimpose les axes SP pour éviter que le cache local les écrase
     loadSettings();
+
+    // Préserver les couleurs/descriptions sauvegardées dans le localStorage
+    // avant que spAxes les écrase (spAxes n'a pas de colonne Couleur)
+    const savedColors = {};
+    (APP.axes || []).forEach(a => {
+      const key = a.id || a.nom;
+      if (key) savedColors[key] = { color: a.color, light: a.light, desc: a.desc };
+      if (a.nom) savedColors[a.nom] = { color: a.color, light: a.light, desc: a.desc };
+    });
+
     APP.axes = spAxes;
+    // Appliquer les couleurs locales comme point de départ (SP Config va les remplacer)
+    APP.axes.forEach(a => {
+      const lc = savedColors[a.id] || savedColors[a.nom];
+      if (lc) {
+        if (lc.color) a.color = lc.color;
+        if (lc.light) a.light = lc.light;
+        if (lc.desc)  a.desc  = lc.desc;
+      }
+    });
     invalidateAxeMap();
 
-    // Appliquer couleurs et config depuis la liste Configuration SP
+    // Appliquer couleurs et config depuis la liste Configuration SP (priorité sur localStorage)
     await loadSpConfig();
     invalidateAxeMap();
 
