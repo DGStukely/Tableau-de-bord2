@@ -87,6 +87,10 @@
           </button>
           <button id="btn-presentation" onclick="togglePresentationMode()" style="padding:.5rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.85rem;font-family:inherit;color:var(--text);">Présentation</button>
           <button onclick="openSettingsModal()" style="padding:.5rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.85rem;font-family:inherit;color:var(--text);">⚙️ Paramètres</button>
+          <button onclick="openImportModal()" style="padding:.5rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.85rem;font-family:inherit;color:var(--text);display:flex;align-items:center;gap:6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importer Excel
+          </button>
           <button onclick="openSharePoint()" style="padding:.5rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.85rem;font-family:inherit;color:var(--text);">Ouvrir SharePoint</button>
         </div>
       </div>
@@ -336,6 +340,55 @@
     </div>
   </div>
 
+  <!-- Modale import Excel -->
+  <div id="import-modal-bg" class="import-modal-bg" onclick="if(event.target===this)closeImportModal()">
+    <div class="import-modal">
+      <div class="import-header">
+        <h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-3px;margin-right:6px;color:var(--c-purple)"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Importer depuis Excel
+        </h3>
+        <button class="import-close" onclick="closeImportModal()">×</button>
+      </div>
+
+      <!-- Panneau init : sélection du fichier -->
+      <div id="import-panel-init" class="import-body">
+        <p class="import-hint">
+          Sélectionnez votre fichier <strong>Gabarit_Import_Plan_Strategique.xlsx</strong>.
+          Les éléments déjà présents dans SharePoint seront ignorés (aucun doublon créé).
+        </p>
+        <div class="import-steps-info">
+          <div class="import-step-tag"><span>1</span> Axes stratégiques — colonne <em>Identifiant</em></div>
+          <div class="import-step-tag"><span>2</span> Actions — colonne <em>Title</em> + <em>Axe_Strategique</em></div>
+          <div class="import-step-tag"><span>3</span> Jalons — colonne <em>Title</em> + <em>ActionId</em></div>
+        </div>
+        <label class="import-dropzone" onclick="document.getElementById('import-file-input').click()">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          <span class="import-file-label" id="import-file-label">Aucun fichier sélectionné</span>
+          <span class="import-file-hint">Cliquez pour parcourir — .xlsx uniquement</span>
+          <input type="file" id="import-file-input" accept=".xlsx,.xls" style="display:none" onchange="onImportFileChange(this)">
+        </label>
+      </div>
+
+      <!-- Panneau progress : journal -->
+      <div id="import-panel-progress" class="import-body" style="display:none">
+        <div id="import-log"></div>
+      </div>
+
+      <!-- Panneau results : résumé -->
+      <div id="import-panel-results" class="import-body" style="display:none">
+        <div id="import-results"></div>
+      </div>
+
+      <div class="import-footer">
+        <button class="import-btn import-btn-ghost" onclick="closeImportModal()">Fermer</button>
+        <button id="import-btn-start" class="import-btn import-btn-primary" onclick="startImport()" disabled>
+          Démarrer l'importation
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modale formulaire -->
   <div id="form-modal-bg" class="modal-bg" onclick="if(event.target===this)closeFormModal()">
     <div class="form-modal">
@@ -513,6 +566,7 @@
   <script src="js/settings.js?v=3"></script>
   <script src="js/notifications.js?v=3"></script>
   <script src="js/navigation.js?v=3"></script>
+  <script src="js/import.js?v=1"></script>
   <script>
     // Service Worker actif uniquement en production (pas en localhost pour le dev local)
     if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
