@@ -48,17 +48,51 @@ function _importShowPanel(name) {
   });
 }
 
+function _setImportFile(file) {
+  if (!file) return;
+  const lbl = document.getElementById('import-file-label');
+  const btn = document.getElementById('import-btn-start');
+  // Injecter dans l'input (pour que startImport() puisse le lire)
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  document.getElementById('import-file-input').files = dt.files;
+  lbl.textContent = file.name;
+  btn.disabled = false;
+}
+
 function onImportFileChange(input) {
-  const file = input.files[0];
-  const lbl  = document.getElementById('import-file-label');
-  const btn  = document.getElementById('import-btn-start');
-  if (file) {
-    lbl.textContent  = file.name;
-    btn.disabled = false;
-  } else {
-    lbl.textContent = 'Aucun fichier sélectionné';
-    btn.disabled = true;
+  _setImportFile(input.files[0]);
+}
+
+/* ── Drag & drop ───────────────────────────────────────────────── */
+function onImportDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'copy';
+}
+
+function onImportDragEnter(e) {
+  e.preventDefault();
+  document.getElementById('import-dropzone').classList.add('import-dropzone-active');
+}
+
+function onImportDragLeave(e) {
+  // Ignorer les events déclenchés par les enfants de la zone
+  const zone = document.getElementById('import-dropzone');
+  if (!zone.contains(e.relatedTarget)) {
+    zone.classList.remove('import-dropzone-active');
   }
+}
+
+function onImportDrop(e) {
+  e.preventDefault();
+  document.getElementById('import-dropzone').classList.remove('import-dropzone-active');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (!file.name.match(/\.xlsx?$/i)) {
+    showToast('Format non supporté — veuillez déposer un fichier .xlsx', 'error');
+    return;
+  }
+  _setImportFile(file);
 }
 
 /* ── Lecture des lignes de données du gabarit ──────────────────── */
