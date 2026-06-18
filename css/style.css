@@ -643,12 +643,16 @@
     .import-steps-info { display:flex; flex-direction:column; gap:6px; }
     .import-step-tag { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--c-text-2); }
     .import-step-tag span { background:var(--c-purple); color:#fff; border-radius:3px; padding:1px 6px; font-size:10px; }
+
+    /* Zone de dépôt / sélection */
     .import-dropzone { border:2px dashed var(--c-border-med); border-radius:var(--radius-md); padding:1.5rem 1rem; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; }
     .import-dropzone:hover { border-color:var(--c-purple); background:var(--c-purple-l); }
     .import-dropzone-active { border-color:var(--c-purple) !important; background:var(--c-purple-l) !important; transform:scale(1.01); box-shadow:0 0 0 3px rgba(83,74,183,0.18); }
     .import-dropzone svg { color:var(--c-text-3); margin-bottom:.5rem; }
     .import-file-label { font-size:13px; font-weight:500; color:var(--c-text); display:block; margin-bottom:2px; }
     .import-file-hint  { font-size:11px; color:var(--c-text-3); }
+
+    /* Boutons pied de modale */
     .import-footer   { padding:.75rem 1.25rem; border-top:1px solid var(--c-border); display:flex; justify-content:flex-end; gap:.5rem; flex-shrink:0; }
     .import-btn      { padding:.45rem 1rem; border:none; border-radius:6px; cursor:pointer; font-size:.85rem; font-family:var(--font); font-weight:500; transition:opacity .15s; }
     .import-btn:disabled { opacity:.4; cursor:not-allowed; }
@@ -656,10 +660,14 @@
     .import-btn-primary:hover:not(:disabled) { opacity:.88; }
     .import-btn-ghost    { background:none; border:1px solid var(--c-border-med); color:var(--c-text-2); }
     .import-btn-ghost:hover { background:var(--c-surface-2); }
+
+    /* Journal de progression */
     #import-log { font-size:11.5px; font-family:var(--font-mono); background:var(--c-surface-2); border:1px solid var(--c-border); border-radius:var(--radius-sm); padding:.75rem; max-height:300px; overflow-y:auto; line-height:1.8; }
     .ilog       { color:var(--c-text-2); }
     .ilog-ok    { color:#3B7D28; }
     .ilog-error { color:#C0392B; font-weight:500; }
+
+    /* Tableau de résultats */
     .import-tbl { width:100%; border-collapse:collapse; font-size:13px; }
     .import-tbl th { text-align:left; padding:7px 10px; background:var(--c-surface-2); color:var(--c-text-2); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--c-border); }
     .import-tbl td { padding:8px 10px; border-bottom:1px solid var(--c-border); color:var(--c-text); }
@@ -670,3 +678,7 @@
     .import-summary      { margin-top:.75rem; padding:.65rem 1rem; border-radius:var(--radius-sm); font-size:13px; background:var(--c-surface-2); color:var(--c-text-2); }
     .import-summary-ok   { background:var(--c-ok-l); color:var(--c-ok); }
     .import-summary-warn { background:var(--c-warn-l); color:var(--c-warn); }
+    .import-log-details  { margin-top:.75rem; }
+    .import-log-details summary { cursor:pointer; font-size:11px; font-weight:600; color:var(--c-text-3); text-transform:uppercase; letter-spacing:.05em; padding:4px 0; user-select:none; }
+    .import-log-details summary:hover { color:var(--c-text-2); }
+    .import-log-copy { font-size:11.5px; font-family:var(--font-mono); background:var(--c-surface-2); border:1px solid var(--c-border); border-radius:var(--radius-sm); padding:.75rem; max-height:200px; overflow-y:auto; line-height:1.8; margin-top:.4rem; }

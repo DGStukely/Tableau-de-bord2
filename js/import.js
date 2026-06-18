@@ -34,11 +34,14 @@ function closeImportModal() {
 
 function _importReset() {
   _importShowPanel('init');
-  document.getElementById('import-file-label').textContent = 'Aucun fichier sélectionné';
+  document.getElementById('import-file-label').textContent = 'Glissez votre fichier ici ou cliquez pour parcourir';
   document.getElementById('import-file-input').value = '';
   document.getElementById('import-log').innerHTML = '';
   document.getElementById('import-results').innerHTML = '';
-  document.getElementById('import-btn-start').disabled = true;
+  const btn = document.getElementById('import-btn-start');
+  btn.textContent = 'Démarrer l\'importation';
+  btn.disabled = true;
+  btn.onclick = () => startImport();
 }
 
 function _importShowPanel(name) {
@@ -318,7 +321,6 @@ async function startImport() {
     log('Importation terminée.', 'ok');
 
     /* 7. Afficher le résumé */
-    _importShowPanel('results');
     const totalCreated = counts.axes.created + counts.actions.created + counts.jalons.created;
     const totalErrors  = counts.axes.errors  + counts.actions.errors  + counts.jalons.errors;
 
@@ -336,10 +338,27 @@ async function startImport() {
 
     const summaryClass = totalErrors ? 'import-summary import-summary-warn' : (totalCreated ? 'import-summary import-summary-ok' : 'import-summary');
     const summaryMsg   = totalCreated
-      ? `${totalCreated} élément(s) créé(s) dans SharePoint.${totalErrors ? ` ${totalErrors} erreur(s) — voir le journal.` : ''}`
+      ? `${totalCreated} élément(s) créé(s) dans SharePoint.${totalErrors ? ` ${totalErrors} erreur(s) — voir le journal ci-dessous.` : ''}`
       : `Aucun nouvel élément — tout était déjà présent dans SharePoint.`;
     html += `<div class="${summaryClass}">${summaryMsg}</div>`;
+
+    // Copier le journal dans les résultats pour que les erreurs restent visibles
+    const logContent = document.getElementById('import-log').innerHTML;
+    if (logContent) {
+      html += `<details class="import-log-details" ${totalErrors ? 'open' : ''}>
+        <summary>Journal détaillé</summary>
+        <div id="import-log-copy" class="import-log-copy">${logContent}</div>
+      </details>`;
+    }
+
     document.getElementById('import-results').innerHTML = html;
+    _importShowPanel('results');
+
+    // Changer le bouton "Démarrer" en "Nouvel import" sur l'écran résultats
+    const btn = document.getElementById('import-btn-start');
+    btn.textContent = 'Nouvel import';
+    btn.disabled = false;
+    btn.onclick = () => _importReset();
 
     /* 8. Rafraîchir le tableau de bord si des éléments ont été créés */
     if (totalCreated > 0) {
